@@ -117,7 +117,7 @@ frame/
 │   │   └── api/                # 对外 API 模块
 │   └── pkg/                    # 内部公共包
 │       ├── jwt/                # JWT 签发/解析
-│       ├── cache/              # Redis 缓存 (Token黑名单/权限缓存/登录限流)
+│       ├── cache/              # 缓存层 (Store接口/RedisStore实现/业务缓存)
 │       ├── response/           # 统一响应格式
 │       ├── errcode/            # 错误码
 │       └── utils/              # 工具 (密码哈希/分页)
@@ -230,13 +230,73 @@ frame/
 2. **菜单管理** — 创建菜单和按钮子项，关联对应的 API
 3. **角色管理** — 给角色分配菜单/按钮，系统自动生成 Casbin 策略
 
-### Redis 缓存说明
+### Redis 缓存
+
+#### 架构设计
+
+缓存层通过接口抽象，业务代码不直接依赖 go-redis：
+
+```
+业务代码 (cache.BlacklistToken / cache.GetUserPermissions ...)
+    │
+    ▼
+cache.Store 接口 (String/Hash/List/Set 全类型支持)
+    │
+    ▼
+cache.RedisStore 实现 (封装 go-redis，自动处理 key 前缀)
+```
+
+#### 全局 Key 前缀
+
+通过 `config.yaml` 配置，多项目共用 Redis 时不会冲突：
+
+```yaml
+redis:
+  key_prefix: "frame:"
+```
+
+实际存储的 key 示例：`frame:token:blacklist:eyJhb...`、`frame:perm:user:1`
+
+#### Store 接口支持的数据类型
+
+| 类型 | 方法 |
+|------|------|
+| String | `Get` `Set` `Del` `Exists` `Incr` `Decr` `Expire` `TTL` `Scan` |
+| Hash | `HGet` `HSet` `HDel` `HGetAll` `HExists` `HIncrBy` `HKeys` `HLen` `HMGet` |
+| List | `LPush` `RPush` `LPop` `RPop` `LRange` `LLen` `LRem` `LIndex` `LTrim` |
+| Set | `SAdd` `SRem` `SMembers` `SIsMember` `SCard` |
+
+#### 内置缓存功能
 
 | 功能 | Key 格式 | TTL | 说明 |
 |------|----------|-----|------|
 | Token 黑名单 | `token:blacklist:{token}` | 与 JWT 过期时间一致 | 退出登录后 Token 立即失效 |
 | 权限缓存 | `perm:user:{userID}` | 10 分钟 | 减少权限查询的数据库压力 |
 | 登录限流 | `login:fail:{username}` | 15 分钟 | 5 次失败后锁定 |
+
+#### 业务中使用缓存
+
+```go
+// 直接调用封装好的业务方法
+cache.BlacklistToken(token, expiration)
+cache.IsTokenBlacklisted(token)
+cache.SetUserPermissions(userID, perms)
+
+// 或通过 Store 接口使用任意 Redis 操作
+store := cache.GetStore()
+store.HSet("user:profile:1", "name", "张三", "age", "25")
+store.LPush("task:queue", taskJSON)
+store.SAdd("online:users", "user_1")
+```
+
+#### 自定义实现
+
+测试或切换缓存方案时，实现 `cache.Store` 接口即可：
+
+```go
+cache.InitStore(myMemoryStore)  // 替换为内存实现
+cache.InitStore(myRedisCluster) // 替换为集群实现
+```
 
 ## 扩展模块
 
