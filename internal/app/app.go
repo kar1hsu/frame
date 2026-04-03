@@ -25,5 +25,7 @@ func Init(cfgFile string) error {
 	}
 	Log.Info("casbin initialized")
 
+	InitTask()
+
 	return nil
 }

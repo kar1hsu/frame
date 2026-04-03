@@ -13,6 +13,7 @@
 | 配置管理 | Viper | YAML/ENV 多环境配置 |
 | 日志 | Zap + Lumberjack | 结构化日志，自动轮转 |
 | 缓存 | Redis (go-redis) | Token 黑名单、权限缓存、登录限流 |
+| 任务队列 | Asynq | 分布式消息队列 + 定时任务，基于 Redis |
 | 密码 | bcrypt | 密码哈希加密 |
 | 前端 | Vue 3 + Element Plus + Vite | 管理面板，通过 Go embed 嵌入 |
 | 部署 | Docker + docker-compose | 一键容器化部署 |
@@ -30,6 +31,8 @@
 - **角色管理** - 角色 CRUD、菜单权限分配（含按钮粒度）
 - **菜单管理** - 树形菜单管理（目录/菜单/按钮三级）、动态菜单
 - **API 管理** - API 接口注册，与菜单/按钮关联，数据库驱动的权限配置
+- **消息队列** - 基于 Asynq + Redis 的分布式任务队列，支持即时/延迟/唯一任务
+- **定时任务** - Asynq Scheduler，cron 语法，多实例防重复投递
 - **前端面板** - Element Plus 管理界面，通过 Go embed 内嵌到二进制
 - **多数据库** - 通过配置切换 MySQL 或 PostgreSQL
 
@@ -99,16 +102,19 @@ docker-compose up -d
 
 ```
 frame/
-├── cmd/server/main.go          # 程序入口
+├── cmd/
+│   ├── server/main.go          # Web 服务入口
+│   └── worker/main.go          # Worker 进程入口（消费者 + 定时任务）
 ├── config/
 │   ├── config.yaml             # 应用配置
 │   └── rbac_model.conf         # Casbin RBAC 模型
 ├── internal/
-│   ├── app/                    # 应用初始化 (Config/Logger/DB/Redis/Casbin/Migrate)
+│   ├── app/                    # 应用初始化 (Config/Logger/DB/Redis/Casbin/Task)
 │   ├── server/                 # HTTP 服务 & 路由注册 & 静态文件
 │   ├── middleware/             # 中间件 (JWT/Casbin/CORS/Logger)
 │   ├── model/                  # 数据模型 (User/Role/Menu/API)
 │   ├── dao/                    # 数据访问层
+│   ├── tasks/                  # 任务定义与注册（Handler + 定时任务）
 │   ├── module/
 │   │   ├── admin/              # Admin 后台模块
 │   │   │   ├── handler/        # 请求处理 (Auth/User/Role/Menu/API)
@@ -117,7 +123,8 @@ frame/
 │   │   └── api/                # 对外 API 模块
 │   └── pkg/                    # 内部公共包
 │       ├── jwt/                # JWT 签发/解析
-│       ├── cache/              # 缓存层 (Store接口/RedisStore实现/业务缓存)
+│       ├── cache/              # 缓存层 (Store接口/RedisStore/业务缓存)
+│       ├── task/               # 任务系统 (Client/Worker/Scheduler/Manager)
 │       ├── response/           # 统一响应格式
 │       ├── errcode/            # 错误码
 │       └── utils/              # 工具 (密码哈希/分页)
@@ -296,6 +303,106 @@ store.SAdd("online:users", "user_1")
 ```go
 cache.InitStore(myMemoryStore)  // 替换为内存实现
 cache.InitStore(myRedisCluster) // 替换为集群实现
+```
+
+## 任务系统（消息队列 + 定时任务）
+
+基于 Asynq + Redis，支持分布式部署，多 Worker 实例自动负载均衡。
+
+### 架构
+
+```
+Web 服务 (生产者)                    Worker 进程 (消费者)
+cmd/server/main.go                  cmd/worker/main.go
+  │ app.TaskMgr.Client.Enqueue()       │ tasks.RegisterHandlers()
+  ▼                                    ▼
+┌──────────────────────────────────────────┐
+│                  Redis                   │
+│  队列: critical / default / low          │
+│  Scheduler: cron 定时投递（内置分布式锁） │
+└──────────────────────────────────────────┘
+```
+
+### 启动 Worker
+
+Web 服务和 Worker 是独立进程，可以分开部署：
+
+```bash
+# 终端 1: Web 服务（生产者）
+go run cmd/server/main.go
+
+# 终端 2: Worker（消费者 + 定时任务）
+go run cmd/worker/main.go
+```
+
+多实例部署时，启动多个 Worker 即可水平扩展。
+
+### 投递任务（生产者）
+
+在任意 Handler / Service 中调用：
+
+```go
+// 即时任务
+app.TaskMgr.Client.Enqueue("email:send", EmailPayload{To: "user@example.com", Subject: "Welcome"})
+
+// 延迟任务（10 分钟后执行）
+app.TaskMgr.Client.EnqueueDelay("email:send", payload, 10*time.Minute)
+
+// 去重任务（1 小时内同样的任务只投递一次）
+app.TaskMgr.Client.EnqueueUnique("report:generate", payload, 1*time.Hour)
+
+// 指定队列（高优先级）
+app.TaskMgr.Client.EnqueueToQueue("order:notify", payload, "critical")
+```
+
+### 定义任务处理器（消费者）
+
+在 `internal/tasks/` 中创建：
+
+```go
+// internal/tasks/types.go — 定义任务类型名
+const TypeOrderNotify = "order:notify"
+
+// internal/tasks/order.go — 实现处理逻辑
+func HandleOrderNotify(ctx context.Context, payload []byte) error {
+    var p OrderPayload
+    json.Unmarshal(payload, &p)
+    // 处理逻辑...
+    return nil
+}
+
+// internal/tasks/register.go — 注册
+func RegisterHandlers(w *task.Worker) {
+    w.Handle(TypeOrderNotify, HandleOrderNotify)
+}
+```
+
+### 定时任务
+
+在 `internal/tasks/register.go` 中注册：
+
+```go
+func RegisterCronJobs(s *task.Scheduler) {
+    // 每天凌晨 2 点清理
+    s.Register(task.CronTask{Cron: "0 2 * * *", TypeName: TypeCleanup})
+    // 每 5 分钟执行
+    s.Register(task.CronTask{Cron: "@every 5m", TypeName: TypeSyncData})
+    // 指定队列
+    s.Register(task.CronTask{Cron: "0 8 * * 1", TypeName: TypeWeeklyReport, Queue: "low"})
+}
+```
+
+### 队列优先级
+
+在 `config.yaml` 中配置，排在前面的优先级更高：
+
+```yaml
+task:
+  concurrency: 10
+  queues:
+    - critical    # 权重 3（最高）
+    - default     # 权重 2
+    - low         # 权重 1（最低）
 ```
 
 ## 扩展模块

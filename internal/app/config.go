@@ -13,6 +13,12 @@ type Config struct {
 	JWT      JWTConfig      `mapstructure:"jwt"`
 	Casbin   CasbinConfig   `mapstructure:"casbin"`
 	Log      LogConfig      `mapstructure:"log"`
+	Task     TaskConfig     `mapstructure:"task"`
+}
+
+type TaskConfig struct {
+	Concurrency int      `mapstructure:"concurrency"`
+	Queues      []string `mapstructure:"queues"`
 }
 
 type ServerConfig struct {

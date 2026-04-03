@@ -4,9 +4,11 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/karlhsu/frame/internal/app"
 	"github.com/karlhsu/frame/internal/module/admin/service"
 	"github.com/karlhsu/frame/internal/pkg/response"
 	"github.com/karlhsu/frame/internal/pkg/utils"
+	"github.com/karlhsu/frame/internal/tasks"
 )
 
 type UserHandler struct {
@@ -31,6 +33,19 @@ func (h *UserHandler) Create(c *gin.Context) {
 		response.Fail(c, 10000, err.Error())
 		return
 	}
+
+	// Example: enqueue a welcome email task after user creation
+	if req.Email != "" {
+		_, err := app.TaskMgr.Client.Enqueue(tasks.TypeEmailSend, tasks.EmailPayload{
+			To:      req.Email,
+			Subject: "欢迎注册",
+			Body:    "您的账号 " + req.Username + " 已创建成功。",
+		})
+		if err != nil {
+			return
+		}
+	}
+
 	response.OK(c, nil)
 }
 

@@ -29,6 +29,13 @@ jwt:
 casbin:
   model_path: config/rbac_model.conf
 
+task:
+  concurrency: 10                  # Worker 并发数
+  queues:                          # 队列列表（按优先级从高到低）
+    - critical
+    - default
+    - low
+
 log:
   level: info       # debug | info | warn | error
   format: console   # console | json
