@@ -24,7 +24,8 @@ Thumbs.db
 
 # Environment
 .env
-config/*.yaml
+config/config.yaml
+deploy/config.yaml
 
 # Frontend
 web/admin/node_modules/

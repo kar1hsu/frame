@@ -7,7 +7,7 @@ services:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: frame
     ports:
-      - "3306:3306"
+      - "13306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
@@ -20,7 +20,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "16379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -35,6 +35,23 @@ services:
       dockerfile: deploy/Dockerfile
     ports:
       - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - DATABASE_HOST=mysql
+      - REDIS_HOST=redis
+    volumes:
+      - ./config.yaml:/app/config/config.yaml
+      - app_logs:/app/logs
+
+  worker:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    command: ["./worker"]
     depends_on:
       mysql:
         condition: service_healthy
