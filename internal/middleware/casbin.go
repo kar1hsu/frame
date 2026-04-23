@@ -1,9 +1,9 @@
 package middleware
 
 import (
+	"frame/internal/app"
+	"frame/internal/pkg/response"
 	"github.com/gin-gonic/gin"
-	"github.com/karlhsu/frame/internal/app"
-	"github.com/karlhsu/frame/internal/pkg/response"
 )
 
 func CasbinRBAC() gin.HandlerFunc {

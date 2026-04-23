@@ -3,9 +3,9 @@ package service
 import (
 	"errors"
 
-	"github.com/karlhsu/frame/internal/dao"
-	"github.com/karlhsu/frame/internal/model"
-	"github.com/karlhsu/frame/internal/pkg/utils"
+	"frame/internal/dao"
+	"frame/internal/model"
+	"frame/internal/pkg/utils"
 	"gorm.io/gorm"
 )
 

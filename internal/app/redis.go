@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/karlhsu/frame/internal/pkg/cache"
+	"frame/internal/pkg/cache"
 	"github.com/redis/go-redis/v9"
 )
 

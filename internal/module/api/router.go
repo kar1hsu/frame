@@ -1,8 +1,8 @@
 package api
 
 import (
+	"frame/internal/module/api/handler"
 	"github.com/gin-gonic/gin"
-	"github.com/karlhsu/frame/internal/module/api/handler"
 )
 
 type Module struct{}

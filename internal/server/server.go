@@ -5,9 +5,9 @@ import (
 	"io/fs"
 	"net/http"
 
+	"frame/internal/app"
+	"frame/internal/middleware"
 	"github.com/gin-gonic/gin"
-	"github.com/karlhsu/frame/internal/app"
-	"github.com/karlhsu/frame/internal/middleware"
 )
 
 type Module interface {

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
+	"frame/internal/app"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/karlhsu/frame/internal/app"
 )
 
 type Claims struct {

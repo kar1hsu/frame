@@ -3,10 +3,10 @@ package middleware
 import (
 	"strings"
 
+	"frame/internal/pkg/cache"
+	jwtpkg "frame/internal/pkg/jwt"
+	"frame/internal/pkg/response"
 	"github.com/gin-gonic/gin"
-	"github.com/karlhsu/frame/internal/pkg/cache"
-	jwtpkg "github.com/karlhsu/frame/internal/pkg/jwt"
-	"github.com/karlhsu/frame/internal/pkg/response"
 )
 
 const (

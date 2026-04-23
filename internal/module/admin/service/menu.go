@@ -3,8 +3,8 @@ package service
 import (
 	"errors"
 
-	"github.com/karlhsu/frame/internal/dao"
-	"github.com/karlhsu/frame/internal/model"
+	"frame/internal/dao"
+	"frame/internal/model"
 )
 
 type MenuService struct {
@@ -34,16 +34,16 @@ type CreateMenuRequest struct {
 }
 
 type UpdateMenuRequest struct {
-	ParentID   *uint  `json:"parent_id"`
-	Name       string `json:"name"`
-	Path       string `json:"path"`
-	Component  string `json:"component"`
-	Icon       string `json:"icon"`
-	Sort       int    `json:"sort"`
-	Type       int8   `json:"type"`
-	Permission string `json:"permission"`
-	Visible    int8   `json:"visible"`
-	Status     int8   `json:"status"`
+	ParentID   *uint   `json:"parent_id"`
+	Name       string  `json:"name"`
+	Path       string  `json:"path"`
+	Component  string  `json:"component"`
+	Icon       string  `json:"icon"`
+	Sort       int     `json:"sort"`
+	Type       int8    `json:"type"`
+	Permission string  `json:"permission"`
+	Visible    int8    `json:"visible"`
+	Status     int8    `json:"status"`
 	APIIDs     *[]uint `json:"api_ids"`
 }
 

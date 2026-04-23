@@ -1,8 +1,8 @@
 package dao
 
 import (
-	"github.com/karlhsu/frame/internal/app"
-	"github.com/karlhsu/frame/internal/model"
+	"frame/internal/app"
+	"frame/internal/model"
 	"gorm.io/gorm"
 )
 

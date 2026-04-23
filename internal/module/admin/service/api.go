@@ -3,8 +3,8 @@ package service
 import (
 	"errors"
 
-	"github.com/karlhsu/frame/internal/dao"
-	"github.com/karlhsu/frame/internal/model"
+	"frame/internal/dao"
+	"frame/internal/model"
 )
 
 type APIService struct {

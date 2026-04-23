@@ -4,11 +4,11 @@ import (
 	"flag"
 	"fmt"
 
-	frame "github.com/karlhsu/frame"
-	"github.com/karlhsu/frame/internal/app"
-	"github.com/karlhsu/frame/internal/module/admin"
-	"github.com/karlhsu/frame/internal/module/api"
-	"github.com/karlhsu/frame/internal/server"
+	frame "frame"
+	"frame/internal/app"
+	"frame/internal/module/admin"
+	"frame/internal/module/api"
+	"frame/internal/server"
 )
 
 func main() {

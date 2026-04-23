@@ -3,10 +3,10 @@ package handler
 import (
 	"strconv"
 
+	"frame/internal/module/admin/service"
+	"frame/internal/pkg/response"
+	"frame/internal/pkg/utils"
 	"github.com/gin-gonic/gin"
-	"github.com/karlhsu/frame/internal/module/admin/service"
-	"github.com/karlhsu/frame/internal/pkg/response"
-	"github.com/karlhsu/frame/internal/pkg/utils"
 )
 
 type RoleHandler struct {

@@ -1,8 +1,8 @@
 package handler
 
 import (
+	"frame/internal/pkg/response"
 	"github.com/gin-gonic/gin"
-	"github.com/karlhsu/frame/internal/pkg/response"
 )
 
 type HealthHandler struct{}

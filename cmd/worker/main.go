@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/karlhsu/frame/internal/app"
-	"github.com/karlhsu/frame/internal/tasks"
+	"frame/internal/app"
+	"frame/internal/tasks"
 )
 
 func main() {
