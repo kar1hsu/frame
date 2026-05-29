@@ -47,10 +47,10 @@ func (d *MenuRepo) GetByIDs(ids []uint) ([]model.SysMenu, error) {
 }
 
 func (d *MenuRepo) SetAPIs(menuID uint, apiIDs []uint) error {
-	menu := &model.SysMenu{BaseModel: model.BaseModel{ID: menuID}}
+	menu := &model.SysMenu{ID: menuID}
 	var apis []model.SysAPI
 	for _, id := range apiIDs {
-		apis = append(apis, model.SysAPI{BaseModel: model.BaseModel{ID: id}})
+		apis = append(apis, model.SysAPI{ID: id})
 	}
 	return d.db().Model(menu).Association("APIs").Replace(apis)
 }

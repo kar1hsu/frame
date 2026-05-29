@@ -37,7 +37,7 @@ func (d *RoleRepo) Update(role *model.SysRole) error {
 }
 
 func (d *RoleRepo) Delete(id uint) error {
-	return d.db().Select("Menus").Delete(&model.SysRole{BaseModel: model.BaseModel{ID: id}}).Error
+	return d.db().Select("Menus").Delete(&model.SysRole{ID: id}).Error
 }
 
 func (d *RoleRepo) List(page, pageSize int) ([]model.SysRole, int64, error) {
@@ -58,16 +58,16 @@ func (d *RoleRepo) ListAll() ([]model.SysRole, error) {
 }
 
 func (d *RoleRepo) SetMenus(roleID uint, menuIDs []uint) error {
-	role := &model.SysRole{BaseModel: model.BaseModel{ID: roleID}}
+	role := &model.SysRole{ID: roleID}
 	var menus []model.SysMenu
 	for _, id := range menuIDs {
-		menus = append(menus, model.SysMenu{BaseModel: model.BaseModel{ID: id}})
+		menus = append(menus, model.SysMenu{ID: id})
 	}
 	return d.db().Model(role).Association("Menus").Replace(menus)
 }
 
 func (d *RoleRepo) GetMenusByRoleID(roleID uint) ([]model.SysMenu, error) {
-	role := &model.SysRole{BaseModel: model.BaseModel{ID: roleID}}
+	role := &model.SysRole{ID: roleID}
 	var menus []model.SysMenu
 	err := d.db().Model(role).Association("Menus").Find(&menus)
 	return menus, err

@@ -52,10 +52,10 @@ func (d *UserRepo) List(page, pageSize int) ([]model.SysUser, int64, error) {
 }
 
 func (d *UserRepo) SetRoles(userID uint, roleIDs []uint) error {
-	user := &model.SysUser{BaseModel: model.BaseModel{ID: userID}}
+	user := &model.SysUser{ID: userID}
 	var roles []model.SysRole
 	for _, id := range roleIDs {
-		roles = append(roles, model.SysRole{BaseModel: model.BaseModel{ID: id}})
+		roles = append(roles, model.SysRole{ID: id})
 	}
 	return d.db().Model(user).Association("Roles").Replace(roles)
 }
