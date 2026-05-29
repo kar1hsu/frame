@@ -1,7 +1,7 @@
 package model
 
 type SysMenu struct {
-	BaseModel
+	ID         uint       `json:"id" gorm:"primaryKey"`
 	ParentID   uint       `json:"parent_id" gorm:"default:0;comment:父菜单ID"`
 	Name       string     `json:"name" gorm:"size:64;not null"`
 	Path       string     `json:"path" gorm:"size:255"`
@@ -14,6 +14,7 @@ type SysMenu struct {
 	Status     int8       `json:"status" gorm:"default:1;comment:1-正常 0-禁用"`
 	APIs       []SysAPI   `json:"apis,omitempty" gorm:"many2many:sys_menu_api;"`
 	Children   []*SysMenu `json:"children,omitempty" gorm:"-"`
+	BaseModel
 }
 
 func (SysMenu) TableName() string {

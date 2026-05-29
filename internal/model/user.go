@@ -1,7 +1,7 @@
 package model
 
 type SysUser struct {
-	BaseModel
+	ID       uint      `json:"id" gorm:"primaryKey"`
 	Username string    `json:"username" gorm:"uniqueIndex;size:64;not null"`
 	Password string    `json:"-" gorm:"size:128;not null"`
 	Nickname string    `json:"nickname" gorm:"size:64"`
@@ -10,6 +10,7 @@ type SysUser struct {
 	Phone    string    `json:"phone" gorm:"size:20"`
 	Status   int8      `json:"status" gorm:"default:1;comment:1-正常 0-禁用"`
 	Roles    []SysRole `json:"roles" gorm:"many2many:sys_user_role;"`
+	BaseModel
 }
 
 func (SysUser) TableName() string {
