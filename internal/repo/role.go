@@ -1,4 +1,4 @@
-package dao
+package repo
 
 import (
 	"frame/internal/app"
@@ -6,41 +6,41 @@ import (
 	"gorm.io/gorm"
 )
 
-type RoleDAO struct{}
+type RoleRepo struct{}
 
-func NewRoleDAO() *RoleDAO {
-	return &RoleDAO{}
+func NewRoleRepo() *RoleRepo {
+	return &RoleRepo{}
 }
 
-func (d *RoleDAO) db() *gorm.DB {
+func (d *RoleRepo) db() *gorm.DB {
 	return app.DB
 }
 
-func (d *RoleDAO) Create(role *model.SysRole) error {
+func (d *RoleRepo) Create(role *model.SysRole) error {
 	return d.db().Create(role).Error
 }
 
-func (d *RoleDAO) GetByID(id uint) (*model.SysRole, error) {
+func (d *RoleRepo) GetByID(id uint) (*model.SysRole, error) {
 	var role model.SysRole
 	err := d.db().Preload("Menus").First(&role, id).Error
 	return &role, err
 }
 
-func (d *RoleDAO) GetByCode(code string) (*model.SysRole, error) {
+func (d *RoleRepo) GetByCode(code string) (*model.SysRole, error) {
 	var role model.SysRole
 	err := d.db().Where("code = ?", code).First(&role).Error
 	return &role, err
 }
 
-func (d *RoleDAO) Update(role *model.SysRole) error {
+func (d *RoleRepo) Update(role *model.SysRole) error {
 	return d.db().Save(role).Error
 }
 
-func (d *RoleDAO) Delete(id uint) error {
+func (d *RoleRepo) Delete(id uint) error {
 	return d.db().Select("Menus").Delete(&model.SysRole{BaseModel: model.BaseModel{ID: id}}).Error
 }
 
-func (d *RoleDAO) List(page, pageSize int) ([]model.SysRole, int64, error) {
+func (d *RoleRepo) List(page, pageSize int) ([]model.SysRole, int64, error) {
 	var roles []model.SysRole
 	var total int64
 
@@ -51,13 +51,13 @@ func (d *RoleDAO) List(page, pageSize int) ([]model.SysRole, int64, error) {
 	return roles, total, err
 }
 
-func (d *RoleDAO) ListAll() ([]model.SysRole, error) {
+func (d *RoleRepo) ListAll() ([]model.SysRole, error) {
 	var roles []model.SysRole
 	err := d.db().Where("status = 1").Order("sort ASC").Find(&roles).Error
 	return roles, err
 }
 
-func (d *RoleDAO) SetMenus(roleID uint, menuIDs []uint) error {
+func (d *RoleRepo) SetMenus(roleID uint, menuIDs []uint) error {
 	role := &model.SysRole{BaseModel: model.BaseModel{ID: roleID}}
 	var menus []model.SysMenu
 	for _, id := range menuIDs {
@@ -66,7 +66,7 @@ func (d *RoleDAO) SetMenus(roleID uint, menuIDs []uint) error {
 	return d.db().Model(role).Association("Menus").Replace(menus)
 }
 
-func (d *RoleDAO) GetMenusByRoleID(roleID uint) ([]model.SysMenu, error) {
+func (d *RoleRepo) GetMenusByRoleID(roleID uint) ([]model.SysMenu, error) {
 	role := &model.SysRole{BaseModel: model.BaseModel{ID: roleID}}
 	var menus []model.SysMenu
 	err := d.db().Model(role).Association("Menus").Find(&menus)

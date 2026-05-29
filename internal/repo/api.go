@@ -1,4 +1,4 @@
-package dao
+package repo
 
 import (
 	"frame/internal/app"
@@ -6,41 +6,41 @@ import (
 	"gorm.io/gorm"
 )
 
-type APIDAO struct{}
+type ApiRepo struct{}
 
-func NewAPIDAO() *APIDAO {
-	return &APIDAO{}
+func NewApiRepo() *ApiRepo {
+	return &ApiRepo{}
 }
 
-func (d *APIDAO) db() *gorm.DB {
+func (d *ApiRepo) db() *gorm.DB {
 	return app.DB
 }
 
-func (d *APIDAO) Create(api *model.SysAPI) error {
+func (d *ApiRepo) Create(api *model.SysAPI) error {
 	return d.db().Create(api).Error
 }
 
-func (d *APIDAO) GetByID(id uint) (*model.SysAPI, error) {
+func (d *ApiRepo) GetByID(id uint) (*model.SysAPI, error) {
 	var api model.SysAPI
 	err := d.db().First(&api, id).Error
 	return &api, err
 }
 
-func (d *APIDAO) Update(api *model.SysAPI) error {
+func (d *ApiRepo) Update(api *model.SysAPI) error {
 	return d.db().Save(api).Error
 }
 
-func (d *APIDAO) Delete(id uint) error {
+func (d *ApiRepo) Delete(id uint) error {
 	return d.db().Delete(&model.SysAPI{}, id).Error
 }
 
-func (d *APIDAO) ListAll() ([]model.SysAPI, error) {
+func (d *ApiRepo) ListAll() ([]model.SysAPI, error) {
 	var apis []model.SysAPI
 	err := d.db().Order("`group` ASC, id ASC").Find(&apis).Error
 	return apis, err
 }
 
-func (d *APIDAO) List(page, pageSize int) ([]model.SysAPI, int64, error) {
+func (d *ApiRepo) List(page, pageSize int) ([]model.SysAPI, int64, error) {
 	var apis []model.SysAPI
 	var total int64
 	db := d.db().Model(&model.SysAPI{})

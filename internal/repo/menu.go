@@ -1,4 +1,4 @@
-package dao
+package repo
 
 import (
 	"frame/internal/app"
@@ -6,47 +6,47 @@ import (
 	"gorm.io/gorm"
 )
 
-type MenuDAO struct{}
+type MenuRepo struct{}
 
-func NewMenuDAO() *MenuDAO {
-	return &MenuDAO{}
+func NewMenuRepo() *MenuRepo {
+	return &MenuRepo{}
 }
 
-func (d *MenuDAO) db() *gorm.DB {
+func (d *MenuRepo) db() *gorm.DB {
 	return app.DB
 }
 
-func (d *MenuDAO) Create(menu *model.SysMenu) error {
+func (d *MenuRepo) Create(menu *model.SysMenu) error {
 	return d.db().Create(menu).Error
 }
 
-func (d *MenuDAO) GetByID(id uint) (*model.SysMenu, error) {
+func (d *MenuRepo) GetByID(id uint) (*model.SysMenu, error) {
 	var menu model.SysMenu
 	err := d.db().Preload("APIs").First(&menu, id).Error
 	return &menu, err
 }
 
-func (d *MenuDAO) Update(menu *model.SysMenu) error {
+func (d *MenuRepo) Update(menu *model.SysMenu) error {
 	return d.db().Save(menu).Error
 }
 
-func (d *MenuDAO) Delete(id uint) error {
+func (d *MenuRepo) Delete(id uint) error {
 	return d.db().Delete(&model.SysMenu{}, id).Error
 }
 
-func (d *MenuDAO) ListAll() ([]model.SysMenu, error) {
+func (d *MenuRepo) ListAll() ([]model.SysMenu, error) {
 	var menus []model.SysMenu
 	err := d.db().Order("sort ASC, id ASC").Find(&menus).Error
 	return menus, err
 }
 
-func (d *MenuDAO) GetByIDs(ids []uint) ([]model.SysMenu, error) {
+func (d *MenuRepo) GetByIDs(ids []uint) ([]model.SysMenu, error) {
 	var menus []model.SysMenu
 	err := d.db().Preload("APIs").Where("id IN ?", ids).Order("sort ASC, id ASC").Find(&menus).Error
 	return menus, err
 }
 
-func (d *MenuDAO) SetAPIs(menuID uint, apiIDs []uint) error {
+func (d *MenuRepo) SetAPIs(menuID uint, apiIDs []uint) error {
 	menu := &model.SysMenu{BaseModel: model.BaseModel{ID: menuID}}
 	var apis []model.SysAPI
 	for _, id := range apiIDs {
@@ -55,7 +55,7 @@ func (d *MenuDAO) SetAPIs(menuID uint, apiIDs []uint) error {
 	return d.db().Model(menu).Association("APIs").Replace(apis)
 }
 
-func (d *MenuDAO) HasChildren(id uint) (bool, error) {
+func (d *MenuRepo) HasChildren(id uint) (bool, error) {
 	var count int64
 	err := d.db().Model(&model.SysMenu{}).Where("parent_id = ?", id).Count(&count).Error
 	return count > 0, err

@@ -6,18 +6,18 @@ import (
 	"time"
 
 	"frame/internal/app"
-	"frame/internal/dao"
 	"frame/internal/pkg/cache"
 	jwtpkg "frame/internal/pkg/jwt"
 	"frame/internal/pkg/utils"
+	"frame/internal/repo"
 )
 
 type AuthService struct {
-	userDAO *dao.UserDAO
+	userRepo *repo.UserRepo
 }
 
 func NewAuthService() *AuthService {
-	return &AuthService{userDAO: dao.NewUserDAO()}
+	return &AuthService{userRepo: repo.NewUserRepo()}
 }
 
 type LoginRequest struct {
@@ -39,7 +39,7 @@ func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
 		return nil, fmt.Errorf("登录失败次数过多，请 %d 分钟后重试", minutes)
 	}
 
-	user, err := s.userDAO.GetByUsername(req.Username)
+	user, err := s.userRepo.GetByUsername(req.Username)
 	if err != nil {
 		cache.IncrLoginFail(req.Username)
 		return nil, errors.New("用户名或密码错误")

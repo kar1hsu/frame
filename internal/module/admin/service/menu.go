@@ -3,19 +3,19 @@ package service
 import (
 	"errors"
 
-	"frame/internal/dao"
 	"frame/internal/model"
+	"frame/internal/repo"
 )
 
 type MenuService struct {
-	menuDAO *dao.MenuDAO
-	roleDAO *dao.RoleDAO
+	menuRepo *repo.MenuRepo
+	roleRepo *repo.RoleRepo
 }
 
 func NewMenuService() *MenuService {
 	return &MenuService{
-		menuDAO: dao.NewMenuDAO(),
-		roleDAO: dao.NewRoleDAO(),
+		menuRepo: repo.NewMenuRepo(),
+		roleRepo: repo.NewRoleRepo(),
 	}
 }
 
@@ -60,21 +60,21 @@ func (s *MenuService) Create(req *CreateMenuRequest) error {
 		Visible:    req.Visible,
 		Status:     req.Status,
 	}
-	if err := s.menuDAO.Create(menu); err != nil {
+	if err := s.menuRepo.Create(menu); err != nil {
 		return err
 	}
 	if len(req.APIIDs) > 0 {
-		return s.menuDAO.SetAPIs(menu.ID, req.APIIDs)
+		return s.menuRepo.SetAPIs(menu.ID, req.APIIDs)
 	}
 	return nil
 }
 
 func (s *MenuService) GetByID(id uint) (*model.SysMenu, error) {
-	return s.menuDAO.GetByID(id)
+	return s.menuRepo.GetByID(id)
 }
 
 func (s *MenuService) Update(id uint, req *UpdateMenuRequest) error {
-	menu, err := s.menuDAO.GetByID(id)
+	menu, err := s.menuRepo.GetByID(id)
 	if err != nil {
 		return errors.New("菜单不存在")
 	}
@@ -102,36 +102,36 @@ func (s *MenuService) Update(id uint, req *UpdateMenuRequest) error {
 	menu.Visible = req.Visible
 	menu.Status = req.Status
 
-	if err := s.menuDAO.Update(menu); err != nil {
+	if err := s.menuRepo.Update(menu); err != nil {
 		return err
 	}
 	if req.APIIDs != nil {
-		return s.menuDAO.SetAPIs(id, *req.APIIDs)
+		return s.menuRepo.SetAPIs(id, *req.APIIDs)
 	}
 	return nil
 }
 
 func (s *MenuService) Delete(id uint) error {
-	has, err := s.menuDAO.HasChildren(id)
+	has, err := s.menuRepo.HasChildren(id)
 	if err != nil {
 		return err
 	}
 	if has {
 		return errors.New("存在子菜单，无法删除")
 	}
-	return s.menuDAO.Delete(id)
+	return s.menuRepo.Delete(id)
 }
 
 func (s *MenuService) GetTree() ([]*model.SysMenu, error) {
-	menus, err := s.menuDAO.ListAll()
+	menus, err := s.menuRepo.ListAll()
 	if err != nil {
 		return nil, err
 	}
-	return dao.BuildMenuTree(menus, 0), nil
+	return repo.BuildMenuTree(menus, 0), nil
 }
 
 func (s *MenuService) GetUserMenuTree(userID uint) ([]*model.SysMenu, error) {
-	userDAO := dao.NewUserDAO()
+	userDAO := repo.NewUserRepo()
 	user, err := userDAO.GetByID(userID)
 	if err != nil {
 		return nil, errors.New("用户不存在")
@@ -139,7 +139,7 @@ func (s *MenuService) GetUserMenuTree(userID uint) ([]*model.SysMenu, error) {
 
 	menuIDSet := make(map[uint]bool)
 	for _, role := range user.Roles {
-		menus, err := s.roleDAO.GetMenusByRoleID(role.ID)
+		menus, err := s.roleRepo.GetMenusByRoleID(role.ID)
 		if err != nil {
 			continue
 		}
@@ -157,7 +157,7 @@ func (s *MenuService) GetUserMenuTree(userID uint) ([]*model.SysMenu, error) {
 		ids = append(ids, id)
 	}
 
-	menus, err := s.menuDAO.GetByIDs(ids)
+	menus, err := s.menuRepo.GetByIDs(ids)
 	if err != nil {
 		return nil, err
 	}
@@ -170,12 +170,12 @@ func (s *MenuService) GetUserMenuTree(userID uint) ([]*model.SysMenu, error) {
 		}
 	}
 
-	return dao.BuildMenuTree(visible, 0), nil
+	return repo.BuildMenuTree(visible, 0), nil
 }
 
 // GetUserPermissions returns all permission identifiers (including buttons) for a user
 func (s *MenuService) GetUserPermissions(userID uint) ([]string, error) {
-	userDAO := dao.NewUserDAO()
+	userDAO := repo.NewUserRepo()
 	user, err := userDAO.GetByID(userID)
 	if err != nil {
 		return nil, errors.New("用户不存在")
@@ -190,7 +190,7 @@ func (s *MenuService) GetUserPermissions(userID uint) ([]string, error) {
 
 	menuIDSet := make(map[uint]bool)
 	for _, role := range user.Roles {
-		menus, err := s.roleDAO.GetMenusByRoleID(role.ID)
+		menus, err := s.roleRepo.GetMenusByRoleID(role.ID)
 		if err != nil {
 			continue
 		}
@@ -208,7 +208,7 @@ func (s *MenuService) GetUserPermissions(userID uint) ([]string, error) {
 		ids = append(ids, id)
 	}
 
-	menus, err := s.menuDAO.GetByIDs(ids)
+	menus, err := s.menuRepo.GetByIDs(ids)
 	if err != nil {
 		return nil, err
 	}

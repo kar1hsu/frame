@@ -3,18 +3,18 @@ package service
 import (
 	"errors"
 
-	"frame/internal/dao"
 	"frame/internal/model"
 	"frame/internal/pkg/utils"
+	"frame/internal/repo"
 	"gorm.io/gorm"
 )
 
 type UserService struct {
-	userDAO *dao.UserDAO
+	userRepo *repo.UserRepo
 }
 
 func NewUserService() *UserService {
-	return &UserService{userDAO: dao.NewUserDAO()}
+	return &UserService{userRepo: repo.NewUserRepo()}
 }
 
 type CreateUserRequest struct {
@@ -38,7 +38,7 @@ type UpdateUserRequest struct {
 }
 
 func (s *UserService) Create(req *CreateUserRequest) error {
-	_, err := s.userDAO.GetByUsername(req.Username)
+	_, err := s.userRepo.GetByUsername(req.Username)
 	if err == nil {
 		return errors.New("用户名已存在")
 	}
@@ -57,22 +57,22 @@ func (s *UserService) Create(req *CreateUserRequest) error {
 		Status:   req.Status,
 	}
 
-	if err := s.userDAO.Create(user); err != nil {
+	if err := s.userRepo.Create(user); err != nil {
 		return err
 	}
 
 	if len(req.RoleIDs) > 0 {
-		return s.userDAO.SetRoles(user.ID, req.RoleIDs)
+		return s.userRepo.SetRoles(user.ID, req.RoleIDs)
 	}
 	return nil
 }
 
 func (s *UserService) GetByID(id uint) (*model.SysUser, error) {
-	return s.userDAO.GetByID(id)
+	return s.userRepo.GetByID(id)
 }
 
 func (s *UserService) Update(id uint, req *UpdateUserRequest) error {
-	user, err := s.userDAO.GetByID(id)
+	user, err := s.userRepo.GetByID(id)
 	if err != nil {
 		return errors.New("用户不存在")
 	}
@@ -100,26 +100,26 @@ func (s *UserService) Update(id uint, req *UpdateUserRequest) error {
 		user.Password = hashed
 	}
 
-	if err := s.userDAO.Update(user); err != nil {
+	if err := s.userRepo.Update(user); err != nil {
 		return err
 	}
 
 	if req.RoleIDs != nil {
-		return s.userDAO.SetRoles(id, req.RoleIDs)
+		return s.userRepo.SetRoles(id, req.RoleIDs)
 	}
 	return nil
 }
 
 func (s *UserService) Delete(id uint) error {
-	return s.userDAO.Delete(id)
+	return s.userRepo.Delete(id)
 }
 
 func (s *UserService) List(page, pageSize int) ([]model.SysUser, int64, error) {
-	return s.userDAO.List(page, pageSize)
+	return s.userRepo.List(page, pageSize)
 }
 
 func (s *UserService) GetProfile(id uint) (*model.SysUser, error) {
-	user, err := s.userDAO.GetByID(id)
+	user, err := s.userRepo.GetByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("用户不存在")

@@ -5,17 +5,17 @@ import (
 	"fmt"
 
 	"frame/internal/app"
-	"frame/internal/dao"
 	"frame/internal/model"
 	"frame/internal/pkg/cache"
+	"frame/internal/repo"
 )
 
 type RoleService struct {
-	roleDAO *dao.RoleDAO
+	roleRepo *repo.RoleRepo
 }
 
 func NewRoleService() *RoleService {
-	return &RoleService{roleDAO: dao.NewRoleDAO()}
+	return &RoleService{roleRepo: repo.NewRoleRepo()}
 }
 
 type CreateRoleRequest struct {
@@ -47,7 +47,7 @@ type RoleAPIItem struct {
 }
 
 func (s *RoleService) Create(req *CreateRoleRequest) error {
-	if _, err := s.roleDAO.GetByCode(req.Code); err == nil {
+	if _, err := s.roleRepo.GetByCode(req.Code); err == nil {
 		return errors.New("角色编码已存在")
 	}
 
@@ -58,15 +58,15 @@ func (s *RoleService) Create(req *CreateRoleRequest) error {
 		Status: req.Status,
 		Remark: req.Remark,
 	}
-	return s.roleDAO.Create(role)
+	return s.roleRepo.Create(role)
 }
 
 func (s *RoleService) GetByID(id uint) (*model.SysRole, error) {
-	return s.roleDAO.GetByID(id)
+	return s.roleRepo.GetByID(id)
 }
 
 func (s *RoleService) Update(id uint, req *UpdateRoleRequest) error {
-	role, err := s.roleDAO.GetByID(id)
+	role, err := s.roleRepo.GetByID(id)
 	if err != nil {
 		return errors.New("角色不存在")
 	}
@@ -81,11 +81,11 @@ func (s *RoleService) Update(id uint, req *UpdateRoleRequest) error {
 	if req.Remark != "" {
 		role.Remark = req.Remark
 	}
-	return s.roleDAO.Update(role)
+	return s.roleRepo.Update(role)
 }
 
 func (s *RoleService) Delete(id uint) error {
-	role, err := s.roleDAO.GetByID(id)
+	role, err := s.roleRepo.GetByID(id)
 	if err != nil {
 		return errors.New("角色不存在")
 	}
@@ -93,25 +93,25 @@ func (s *RoleService) Delete(id uint) error {
 	// Remove all casbin policies for this role
 	app.Enforcer.RemoveFilteredPolicy(0, role.Code)
 
-	return s.roleDAO.Delete(id)
+	return s.roleRepo.Delete(id)
 }
 
 func (s *RoleService) List(page, pageSize int) ([]model.SysRole, int64, error) {
-	return s.roleDAO.List(page, pageSize)
+	return s.roleRepo.List(page, pageSize)
 }
 
 func (s *RoleService) ListAll() ([]model.SysRole, error) {
-	return s.roleDAO.ListAll()
+	return s.roleRepo.ListAll()
 }
 
 // permissionAPIs maps menu permission identifiers to API routes.
 // When menus are assigned to a role, Casbin policies are auto-generated from this map.
 func (s *RoleService) SetMenus(roleID uint, menuIDs []uint) error {
-	if err := s.roleDAO.SetMenus(roleID, menuIDs); err != nil {
+	if err := s.roleRepo.SetMenus(roleID, menuIDs); err != nil {
 		return err
 	}
 
-	role, err := s.roleDAO.GetByID(roleID)
+	role, err := s.roleRepo.GetByID(roleID)
 	if err != nil {
 		return err
 	}
@@ -120,7 +120,7 @@ func (s *RoleService) SetMenus(roleID uint, menuIDs []uint) error {
 	app.Enforcer.RemoveFilteredPolicy(0, role.Code)
 
 	if len(menuIDs) > 0 {
-		menuDAO := dao.NewMenuDAO()
+		menuDAO := repo.NewMenuRepo()
 		menus, err := menuDAO.GetByIDs(menuIDs)
 		if err != nil {
 			return err
@@ -139,7 +139,7 @@ func (s *RoleService) SetMenus(roleID uint, menuIDs []uint) error {
 }
 
 func (s *RoleService) SetAPIs(roleID uint, apis []RoleAPIItem) error {
-	role, err := s.roleDAO.GetByID(roleID)
+	role, err := s.roleRepo.GetByID(roleID)
 	if err != nil {
 		return errors.New("角色不存在")
 	}
@@ -158,7 +158,7 @@ func (s *RoleService) SetAPIs(roleID uint, apis []RoleAPIItem) error {
 }
 
 func (s *RoleService) GetAPIs(roleID uint) ([]RoleAPIItem, error) {
-	role, err := s.roleDAO.GetByID(roleID)
+	role, err := s.roleRepo.GetByID(roleID)
 	if err != nil {
 		return nil, errors.New("角色不存在")
 	}

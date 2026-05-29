@@ -3,16 +3,16 @@ package service
 import (
 	"errors"
 
-	"frame/internal/dao"
 	"frame/internal/model"
+	"frame/internal/repo"
 )
 
 type APIService struct {
-	apiDAO *dao.APIDAO
+	apiRepo *repo.ApiRepo
 }
 
 func NewAPIService() *APIService {
-	return &APIService{apiDAO: dao.NewAPIDAO()}
+	return &APIService{apiRepo: repo.NewApiRepo()}
 }
 
 type CreateAPIRequest struct {
@@ -36,15 +36,15 @@ func (s *APIService) Create(req *CreateAPIRequest) error {
 		Group:       req.Group,
 		Description: req.Description,
 	}
-	return s.apiDAO.Create(api)
+	return s.apiRepo.Create(api)
 }
 
 func (s *APIService) GetByID(id uint) (*model.SysAPI, error) {
-	return s.apiDAO.GetByID(id)
+	return s.apiRepo.GetByID(id)
 }
 
 func (s *APIService) Update(id uint, req *UpdateAPIRequest) error {
-	api, err := s.apiDAO.GetByID(id)
+	api, err := s.apiRepo.GetByID(id)
 	if err != nil {
 		return errors.New("API 不存在")
 	}
@@ -60,17 +60,17 @@ func (s *APIService) Update(id uint, req *UpdateAPIRequest) error {
 	if req.Description != "" {
 		api.Description = req.Description
 	}
-	return s.apiDAO.Update(api)
+	return s.apiRepo.Update(api)
 }
 
 func (s *APIService) Delete(id uint) error {
-	return s.apiDAO.Delete(id)
+	return s.apiRepo.Delete(id)
 }
 
 func (s *APIService) List(page, pageSize int) ([]model.SysAPI, int64, error) {
-	return s.apiDAO.List(page, pageSize)
+	return s.apiRepo.List(page, pageSize)
 }
 
 func (s *APIService) ListAll() ([]model.SysAPI, error) {
-	return s.apiDAO.ListAll()
+	return s.apiRepo.ListAll()
 }
