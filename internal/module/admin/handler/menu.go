@@ -3,10 +3,10 @@ package handler
 import (
 	"strconv"
 
-	"frame/internal/middleware"
-	"frame/internal/module/admin/service"
-	"frame/internal/pkg/response"
 	"github.com/gin-gonic/gin"
+	"github.com/kar1hsu/frame/internal/middleware"
+	"github.com/kar1hsu/frame/internal/module/admin/service"
+	"github.com/kar1hsu/frame/internal/pkg/response"
 )
 
 type MenuHandler struct {

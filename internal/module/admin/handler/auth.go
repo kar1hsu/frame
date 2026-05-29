@@ -3,11 +3,11 @@ package handler
 import (
 	"strings"
 
-	"frame/internal/middleware"
-	"frame/internal/module/admin/service"
-	"frame/internal/pkg/cache"
-	"frame/internal/pkg/response"
 	"github.com/gin-gonic/gin"
+	"github.com/kar1hsu/frame/internal/middleware"
+	"github.com/kar1hsu/frame/internal/module/admin/service"
+	"github.com/kar1hsu/frame/internal/pkg/cache"
+	"github.com/kar1hsu/frame/internal/pkg/response"
 )
 
 type AuthHandler struct {

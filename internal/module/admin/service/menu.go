@@ -3,8 +3,8 @@ package service
 import (
 	"errors"
 
-	"frame/internal/model"
-	"frame/internal/repository"
+	"github.com/kar1hsu/frame/internal/model"
+	"github.com/kar1hsu/frame/internal/repository"
 )
 
 type MenuService struct {

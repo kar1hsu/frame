@@ -1,6 +1,6 @@
 package app
 
-import "frame/internal/pkg/task"
+import "github.com/kar1hsu/frame/internal/pkg/task"
 
 var TaskMgr *task.Manager
 

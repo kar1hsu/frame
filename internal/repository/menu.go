@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"frame/internal/app"
-	"frame/internal/model"
+	"github.com/kar1hsu/frame/internal/app"
+	"github.com/kar1hsu/frame/internal/model"
 	"gorm.io/gorm"
 )
 

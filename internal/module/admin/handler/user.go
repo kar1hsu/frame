@@ -3,12 +3,12 @@ package handler
 import (
 	"strconv"
 
-	"frame/internal/app"
-	"frame/internal/module/admin/service"
-	"frame/internal/pkg/response"
-	"frame/internal/pkg/utils"
-	"frame/internal/tasks"
 	"github.com/gin-gonic/gin"
+	"github.com/kar1hsu/frame/internal/app"
+	"github.com/kar1hsu/frame/internal/module/admin/service"
+	"github.com/kar1hsu/frame/internal/pkg/response"
+	"github.com/kar1hsu/frame/internal/pkg/utils"
+	"github.com/kar1hsu/frame/internal/tasks"
 )
 
 type UserHandler struct {

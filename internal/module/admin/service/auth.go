@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	"frame/internal/app"
-	"frame/internal/pkg/cache"
-	jwtpkg "frame/internal/pkg/jwt"
-	"frame/internal/pkg/utils"
-	"frame/internal/repository"
+	"github.com/kar1hsu/frame/internal/app"
+	"github.com/kar1hsu/frame/internal/pkg/cache"
+	jwtpkg "github.com/kar1hsu/frame/internal/pkg/jwt"
+	"github.com/kar1hsu/frame/internal/pkg/utils"
+	"github.com/kar1hsu/frame/internal/repository"
 )
 
 type AuthService struct {

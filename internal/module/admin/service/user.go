@@ -3,9 +3,9 @@ package service
 import (
 	"errors"
 
-	"frame/internal/model"
-	"frame/internal/pkg/utils"
-	"frame/internal/repository"
+	"github.com/kar1hsu/frame/internal/model"
+	"github.com/kar1hsu/frame/internal/pkg/utils"
+	"github.com/kar1hsu/frame/internal/repository"
 	"gorm.io/gorm"
 )
 

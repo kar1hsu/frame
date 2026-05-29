@@ -1,8 +1,8 @@
 package app
 
 import (
-	"frame/internal/model"
-	"frame/internal/pkg/utils"
+	"github.com/kar1hsu/frame/internal/model"
+	"github.com/kar1hsu/frame/internal/pkg/utils"
 )
 
 func AutoMigrate() error {

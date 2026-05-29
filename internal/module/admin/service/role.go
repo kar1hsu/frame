@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	"frame/internal/app"
-	"frame/internal/model"
-	"frame/internal/pkg/cache"
-	"frame/internal/repository"
+	"github.com/kar1hsu/frame/internal/app"
+	"github.com/kar1hsu/frame/internal/model"
+	"github.com/kar1hsu/frame/internal/pkg/cache"
+	"github.com/kar1hsu/frame/internal/repository"
 )
 
 type RoleService struct {

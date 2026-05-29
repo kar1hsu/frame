@@ -1,9 +1,9 @@
 package admin
 
 import (
-	"frame/internal/middleware"
-	"frame/internal/module/admin/handler"
 	"github.com/gin-gonic/gin"
+	"github.com/kar1hsu/frame/internal/middleware"
+	"github.com/kar1hsu/frame/internal/module/admin/handler"
 )
 
 type Module struct{}

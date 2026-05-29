@@ -1,8 +1,8 @@
 package tasks
 
 import (
-	"frame/internal/pkg/task"
-	"frame/internal/pkg/utils"
+	"github.com/kar1hsu/frame/internal/pkg/task"
+	"github.com/kar1hsu/frame/internal/pkg/utils"
 )
 
 // RegisterHandlers registers all task handlers on the worker.

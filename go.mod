@@ -1,4 +1,4 @@
-module frame
+module github.com/kar1hsu/frame
 
 go 1.25.0
 
