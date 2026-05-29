@@ -7,15 +7,15 @@ import (
 	"frame/internal/app"
 	"frame/internal/model"
 	"frame/internal/pkg/cache"
-	"frame/internal/repo"
+	"frame/internal/repository"
 )
 
 type RoleService struct {
-	roleRepo *repo.RoleRepo
+	roleRepo *repository.RoleRepo
 }
 
 func NewRoleService() *RoleService {
-	return &RoleService{roleRepo: repo.NewRoleRepo()}
+	return &RoleService{roleRepo: repository.NewRoleRepo()}
 }
 
 type CreateRoleRequest struct {
@@ -120,7 +120,7 @@ func (s *RoleService) SetMenus(roleID uint, menuIDs []uint) error {
 	app.Enforcer.RemoveFilteredPolicy(0, role.Code)
 
 	if len(menuIDs) > 0 {
-		menuDAO := repo.NewMenuRepo()
+		menuDAO := repository.NewMenuRepo()
 		menus, err := menuDAO.GetByIDs(menuIDs)
 		if err != nil {
 			return err

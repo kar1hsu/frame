@@ -5,16 +5,16 @@ import (
 
 	"frame/internal/model"
 	"frame/internal/pkg/utils"
-	"frame/internal/repo"
+	"frame/internal/repository"
 	"gorm.io/gorm"
 )
 
 type UserService struct {
-	userRepo *repo.UserRepo
+	userRepo *repository.UserRepo
 }
 
 func NewUserService() *UserService {
-	return &UserService{userRepo: repo.NewUserRepo()}
+	return &UserService{userRepo: repository.NewUserRepo()}
 }
 
 type CreateUserRequest struct {

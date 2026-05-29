@@ -9,15 +9,15 @@ import (
 	"frame/internal/pkg/cache"
 	jwtpkg "frame/internal/pkg/jwt"
 	"frame/internal/pkg/utils"
-	"frame/internal/repo"
+	"frame/internal/repository"
 )
 
 type AuthService struct {
-	userRepo *repo.UserRepo
+	userRepo *repository.UserRepo
 }
 
 func NewAuthService() *AuthService {
-	return &AuthService{userRepo: repo.NewUserRepo()}
+	return &AuthService{userRepo: repository.NewUserRepo()}
 }
 
 type LoginRequest struct {

@@ -4,18 +4,18 @@ import (
 	"errors"
 
 	"frame/internal/model"
-	"frame/internal/repo"
+	"frame/internal/repository"
 )
 
 type MenuService struct {
-	menuRepo *repo.MenuRepo
-	roleRepo *repo.RoleRepo
+	menuRepo *repository.MenuRepo
+	roleRepo *repository.RoleRepo
 }
 
 func NewMenuService() *MenuService {
 	return &MenuService{
-		menuRepo: repo.NewMenuRepo(),
-		roleRepo: repo.NewRoleRepo(),
+		menuRepo: repository.NewMenuRepo(),
+		roleRepo: repository.NewRoleRepo(),
 	}
 }
 
@@ -127,11 +127,11 @@ func (s *MenuService) GetTree() ([]*model.SysMenu, error) {
 	if err != nil {
 		return nil, err
 	}
-	return repo.BuildMenuTree(menus, 0), nil
+	return repository.BuildMenuTree(menus, 0), nil
 }
 
 func (s *MenuService) GetUserMenuTree(userID uint) ([]*model.SysMenu, error) {
-	userDAO := repo.NewUserRepo()
+	userDAO := repository.NewUserRepo()
 	user, err := userDAO.GetByID(userID)
 	if err != nil {
 		return nil, errors.New("用户不存在")
@@ -170,12 +170,12 @@ func (s *MenuService) GetUserMenuTree(userID uint) ([]*model.SysMenu, error) {
 		}
 	}
 
-	return repo.BuildMenuTree(visible, 0), nil
+	return repository.BuildMenuTree(visible, 0), nil
 }
 
 // GetUserPermissions returns all permission identifiers (including buttons) for a user
 func (s *MenuService) GetUserPermissions(userID uint) ([]string, error) {
-	userDAO := repo.NewUserRepo()
+	userDAO := repository.NewUserRepo()
 	user, err := userDAO.GetByID(userID)
 	if err != nil {
 		return nil, errors.New("用户不存在")

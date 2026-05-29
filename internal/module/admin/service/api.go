@@ -4,15 +4,15 @@ import (
 	"errors"
 
 	"frame/internal/model"
-	"frame/internal/repo"
+	"frame/internal/repository"
 )
 
 type APIService struct {
-	apiRepo *repo.ApiRepo
+	apiRepo *repository.ApiRepo
 }
 
 func NewAPIService() *APIService {
-	return &APIService{apiRepo: repo.NewApiRepo()}
+	return &APIService{apiRepo: repository.NewApiRepo()}
 }
 
 type CreateAPIRequest struct {
