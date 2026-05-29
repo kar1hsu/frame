@@ -15,7 +15,7 @@ const (
 	CtxRoleCodeKey = "role_code"
 )
 
-func JWTAuth() gin.HandlerFunc {
+func AdminAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {

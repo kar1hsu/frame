@@ -28,7 +28,7 @@ func (m *Module) RegisterRoutes(rg *gin.RouterGroup) {
 
 	// Authenticated routes (JWT only, no RBAC)
 	// For: user profile, option/dropdown data queries
-	authenticated := rg.Group("", middleware.JWTAuth())
+	authenticated := rg.Group("", middleware.AdminAuth())
 	{
 		authenticated.POST("/logout", authHandler.Logout)
 		authenticated.GET("/profile", authHandler.GetProfile)
@@ -41,7 +41,7 @@ func (m *Module) RegisterRoutes(rg *gin.RouterGroup) {
 
 	// Protected routes (JWT + Casbin RBAC)
 	// For: CRUD management operations
-	auth := rg.Group("", middleware.JWTAuth(), middleware.CasbinRBAC())
+	auth := rg.Group("", middleware.AdminAuth(), middleware.CasbinRBAC())
 	{
 		// Users
 		auth.GET("/users", userHandler.List)
