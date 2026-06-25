@@ -17,7 +17,8 @@ RUN go mod download -x
 COPY . .
 COPY --from=frontend /app/web/admin/dist ./web/admin/dist
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /app/server ./cmd/server && \
-    CGO_ENABLED=0 go build -ldflags="-s -w" -o /app/worker ./cmd/worker
+    CGO_ENABLED=0 go build -ldflags="-s -w" -o /app/worker ./cmd/worker && \
+    CGO_ENABLED=0 go build -ldflags="-s -w" -o /app/scheduler ./cmd/scheduler
 
 # Stage 3: Final image
 FROM alpine:3.19
@@ -26,6 +27,7 @@ ENV TZ=Asia/Shanghai
 WORKDIR /app
 COPY --from=backend /app/server .
 COPY --from=backend /app/worker .
+COPY --from=backend /app/scheduler .
 COPY config/config.yaml ./config/
 COPY config/rbac_model.conf ./config/
 

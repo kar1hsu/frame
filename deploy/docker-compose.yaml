@@ -4,8 +4,8 @@ services:
   mysql:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: frame
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?set in deploy/.env}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-frame}"
     ports:
       - "13306:3306"
     volumes:
@@ -19,12 +19,13 @@ services:
 
   redis:
     image: redis:7-alpine
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?set in deploy/.env}"]
     ports:
       - "16379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -52,6 +53,24 @@ services:
       context: ..
       dockerfile: deploy/Dockerfile
     command: ["./worker"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - DATABASE_HOST=mysql
+      - REDIS_HOST=redis
+    volumes:
+      - ./config.yaml:/app/config/config.yaml
+      - app_logs:/app/logs
+
+  # 定时任务调度器：必须单实例，切勿 scale > 1（asynq.Scheduler 无选主）
+  scheduler:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    command: ["./scheduler"]
     depends_on:
       mysql:
         condition: service_healthy

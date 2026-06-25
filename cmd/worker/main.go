@@ -25,19 +25,9 @@ func main() {
 	tasks.RegisterHandlers(mgr.Worker)
 	app.Log.Info("task handlers registered")
 
-	// Register cron jobs
-	tasks.RegisterCronJobs(mgr.Scheduler)
-	app.Log.Info("cron jobs registered")
-
-	// Start scheduler in background
-	go func() {
-		if err := mgr.Scheduler.Start(); err != nil {
-			app.Log.Errorf("scheduler start failed: %v", err)
-		}
-	}()
-	app.Log.Info("scheduler started")
-
-	// Start worker (blocks until shutdown signal)
+	// Start worker (consumer). Safe to run multiple instances — Redis
+	// load-balances tasks across all running workers.
+	// NOTE: periodic tasks are scheduled by a separate process (cmd/scheduler).
 	go func() {
 		if err := mgr.Worker.Start(); err != nil {
 			app.Log.Errorf("worker start failed: %v", err)
@@ -51,7 +41,6 @@ func main() {
 	<-quit
 
 	app.Log.Info("shutting down worker...")
-	mgr.Scheduler.Stop()
 	mgr.Worker.Stop()
 	app.Close()
 	app.Log.Info("worker stopped")

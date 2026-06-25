@@ -3,20 +3,27 @@ package task
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/hibiken/asynq"
 )
 
 // CronTask defines a scheduled task with cron expression.
 type CronTask struct {
-	Cron     string      // cron expression, e.g. "0 2 * * *" or "@every 5m"
-	TypeName string      // task type name
-	Payload  interface{} // task payload (will be JSON-marshaled)
-	Queue    string      // target queue (optional, defaults to "default")
+	Cron     string        // cron expression, e.g. "0 2 * * *" or "@every 5m"
+	TypeName string        // task type name
+	Payload  interface{}   // task payload (will be JSON-marshaled)
+	Queue    string        // target queue (optional, defaults to "default")
+	Unique   time.Duration // if > 0, dedupe enqueues within this TTL (set < the cron interval)
 }
 
-// Scheduler wraps asynq.Scheduler for distributed cron jobs.
-// Multiple Scheduler instances can run safely — only one will enqueue each cron task.
+// Scheduler wraps asynq.Scheduler for cron jobs.
+//
+// asynq.Scheduler does NOT perform leader election: running it in N processes
+// enqueues each cron task N times. Deploy exactly ONE scheduler instance
+// (see cmd/scheduler). As a safety net, give each CronTask a Unique TTL so that
+// duplicate enqueues — e.g. from an accidentally started second instance — are
+// deduplicated by Redis.
 type Scheduler struct {
 	scheduler *asynq.Scheduler
 }
@@ -44,6 +51,9 @@ func (s *Scheduler) Register(ct CronTask) (string, error) {
 	var opts []asynq.Option
 	if ct.Queue != "" {
 		opts = append(opts, asynq.Queue(ct.Queue))
+	}
+	if ct.Unique > 0 {
+		opts = append(opts, asynq.Unique(ct.Unique))
 	}
 
 	entryID, err := s.scheduler.Register(ct.Cron, task, opts...)

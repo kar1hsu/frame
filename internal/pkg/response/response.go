@@ -57,3 +57,11 @@ func Forbidden(c *gin.Context, msg string) {
 	})
 	c.Abort()
 }
+
+func NotFound(c *gin.Context, msg string) {
+	c.JSON(http.StatusNotFound, Response{
+		Code:    404,
+		Message: msg,
+	})
+	c.Abort()
+}

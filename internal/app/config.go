@@ -105,8 +105,8 @@ func InitConfig(cfgFile string) error {
 
 	setConfigDefaults()
 
-	// Allow nested keys to be overridden via env, e.g. FRAME_DATABASE_PASSWORD.
-	viper.SetEnvPrefix("FRAME")
+	// Allow nested config keys to be overridden via env vars, e.g. the env var
+	// DATABASE_HOST overrides database.host (used by deploy/docker-compose.yaml).
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 

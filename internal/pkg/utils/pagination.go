@@ -4,8 +4,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
+
+const maxPage = 10000
 
 type Pagination struct {
 	Page     int   `json:"page"`
@@ -20,16 +21,12 @@ func GetPagination(c *gin.Context) Pagination {
 	if page < 1 {
 		page = 1
 	}
+	if page > maxPage {
+		page = maxPage
+	}
 	if pageSize < 1 || pageSize > 100 {
 		pageSize = 10
 	}
 
 	return Pagination{Page: page, PageSize: pageSize}
-}
-
-func Paginate(p Pagination) func(db *gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		offset := (p.Page - 1) * p.PageSize
-		return db.Offset(offset).Limit(p.PageSize)
-	}
 }

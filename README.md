@@ -32,7 +32,7 @@
 - **菜单管理** - 树形菜单管理（目录/菜单/按钮三级）、动态菜单
 - **API 管理** - API 接口注册，与菜单/按钮关联，数据库驱动的权限配置
 - **消息队列** - 基于 Asynq + Redis 的分布式任务队列，支持即时/延迟/唯一任务
-- **定时任务** - Asynq Scheduler，cron 语法，多实例防重复投递
+- **定时任务** - Asynq Scheduler，cron 语法，独立 Scheduler 进程；可选 Unique 去重防多实例重复投递
 - **前端面板** - Element Plus 管理界面，通过 Go embed 内嵌到二进制
 - **多数据库** - 通过配置切换 MySQL 或 PostgreSQL
 
@@ -104,8 +104,9 @@ docker-compose up -d
 ```
 frame/
 ├── cmd/
-│   ├── server/main.go          # Web 服务入口
-│   └── worker/main.go          # Worker 进程入口（消费者 + 定时任务）
+│   ├── server/main.go          # Web 服务入口（生产者）
+│   ├── worker/main.go          # Worker 进程入口（消费者，可多实例）
+│   └── scheduler/main.go       # Scheduler 进程入口（定时投递，单实例）
 ├── config/
 │   ├── config.yaml             # 应用配置
 │   └── rbac_model.conf         # Casbin RBAC 模型
@@ -313,30 +314,36 @@ cache.InitStore(myRedisCluster) // 替换为集群实现
 ### 架构
 
 ```
-Web 服务 (生产者)                    Worker 进程 (消费者)
-cmd/server/main.go                  cmd/worker/main.go
-  │ app.TaskMgr.Client.Enqueue()       │ tasks.RegisterHandlers()
-  ▼                                    ▼
-┌──────────────────────────────────────────┐
-│                  Redis                   │
-│  队列: critical / default / low          │
-│  Scheduler: cron 定时投递（内置分布式锁） │
-└──────────────────────────────────────────┘
+Web 服务 (生产者)       Scheduler (定时投递)      Worker (消费者)
+cmd/server/main.go     cmd/scheduler/main.go     cmd/worker/main.go
+  │ Client.Enqueue()     │ 按 cron 投递            │ tasks.RegisterHandlers()
+  │                      │ (单实例 + Unique 去重)  │ (可多实例，自动负载均衡)
+  ▼                      ▼                         ▲
+┌─────────────────────────────────────────────────────┐
+│                       Redis                         │
+│            队列: critical / default / low            │
+└─────────────────────────────────────────────────────┘
 ```
 
-### 启动 Worker
+### 启动进程
 
-Web 服务和 Worker 是独立进程，可以分开部署：
+Web 服务、Scheduler、Worker 是三个独立进程，可分开部署：
 
 ```bash
 # 终端 1: Web 服务（生产者）
 go run cmd/server/main.go
 
-# 终端 2: Worker（消费者 + 定时任务）
+# 终端 2: Scheduler（定时任务投递端）
+go run cmd/scheduler/main.go
+
+# 终端 3: Worker（消费者）
 go run cmd/worker/main.go
 ```
 
-多实例部署时，启动多个 Worker 即可水平扩展。
+**水平扩展与多实例**：
+
+- **Worker 可任意多实例** — 多个 Worker 消费同一 Redis 队列，任务自动负载均衡，是真正的分布式消费。
+- **Scheduler 必须单实例** — `asynq.Scheduler` 没有选主机制，N 个实例会让每个 cron 任务被投递 N 次。生产环境只部署一个 Scheduler。作为兜底，给 cron 任务设置 `Unique` TTL（见下），即使误起第二个实例，Redis 也会对重复投递去重。
 
 ### 投递任务（生产者）
 
@@ -380,18 +387,20 @@ func RegisterHandlers(w *task.Worker) {
 
 ### 定时任务
 
-在 `internal/tasks/register.go` 中注册：
+在 `internal/tasks/register.go` 中注册，由 `cmd/scheduler` 进程加载：
 
 ```go
 func RegisterCronJobs(s *task.Scheduler) {
-    // 每天凌晨 2 点清理
-    s.Register(task.CronTask{Cron: "0 2 * * *", TypeName: TypeCleanup})
+    // 每天凌晨 2 点清理（Unique TTL < 触发间隔，多实例下去重）
+    s.Register(task.CronTask{Cron: "0 2 * * *", TypeName: TypeCleanup, Unique: 23 * time.Hour})
     // 每 5 分钟执行
-    s.Register(task.CronTask{Cron: "@every 5m", TypeName: TypeSyncData})
+    s.Register(task.CronTask{Cron: "@every 5m", TypeName: TypeSyncData, Unique: 4 * time.Minute})
     // 指定队列
     s.Register(task.CronTask{Cron: "0 8 * * 1", TypeName: TypeWeeklyReport, Queue: "low"})
 }
 ```
+
+> `Unique` 字段可选：设为略小于触发间隔的值后，即便有多个 Scheduler 实例同时投递，Redis 也只会让一个任务进入队列。
 
 ### 队列优先级
 
