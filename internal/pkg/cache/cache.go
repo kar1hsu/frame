@@ -110,3 +110,39 @@ func GetLoginLockTTL(username, ip string) time.Duration {
 	ttl, _ := store.TTL(loginKey(username, ip))
 	return ttl
 }
+
+// ── System Config Cache ──
+// All runtime configs share one Redis hash; each field is a config key. Reads go
+// here first and fall back to DB on miss (see internal/pkg/setting).
+
+const configHashKey = "config"
+
+// GetConfigCache returns (value, true) on a cache hit. A miss or any Redis error
+// returns ("", false) so the caller falls back to the DB.
+func GetConfigCache(key string) (string, bool) {
+	val, err := store.HGet(configHashKey, key)
+	if err != nil {
+		return "", false
+	}
+	return val, true
+}
+
+func SetConfigCache(key, value string) error {
+	return store.HSet(configHashKey, key, value)
+}
+
+func DelConfigCache(key string) error {
+	return store.HDel(configHashKey, key)
+}
+
+// RebuildConfigCache atomically-ish replaces the whole config hash with kv
+// (used by the "refresh all" maintenance action and startup warm-up).
+func RebuildConfigCache(kv map[string]string) error {
+	if err := store.Del(configHashKey); err != nil {
+		return err
+	}
+	if len(kv) == 0 {
+		return nil
+	}
+	return store.HSet(configHashKey, kv)
+}

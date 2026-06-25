@@ -14,6 +14,7 @@ import (
 	"github.com/kar1hsu/frame/internal/app"
 	"github.com/kar1hsu/frame/internal/module/admin"
 	"github.com/kar1hsu/frame/internal/module/api"
+	"github.com/kar1hsu/frame/internal/pkg/setting"
 	"github.com/kar1hsu/frame/internal/server"
 )
 
@@ -34,8 +35,9 @@ func main() {
 		app.Log.Warnf("seed data: %v", err)
 	}
 
-	if err := app.SeedMenus(); err != nil {
-		app.Log.Warnf("seed menus: %v", err)
+	// Seed default config values into DB and warm the Redis cache.
+	if err := setting.Init(context.Background()); err != nil {
+		app.Log.Warnf("init settings: %v", err)
 	}
 
 	router := server.NewRouter(

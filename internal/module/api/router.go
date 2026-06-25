@@ -17,6 +17,8 @@ func (m *Module) Name() string {
 
 func (m *Module) RegisterRoutes(rg *gin.RouterGroup) {
 	healthHandler := handler.NewHealthHandler()
+	configHandler := handler.NewConfigHandler()
 
 	rg.GET("/health", healthHandler.Health)
+	rg.GET("/configs/public", configHandler.Public)
 }

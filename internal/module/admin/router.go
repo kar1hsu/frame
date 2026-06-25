@@ -23,6 +23,7 @@ func (m *Module) RegisterRoutes(rg *gin.RouterGroup) {
 	menuHandler := handler.NewMenuHandler()
 	apiHandler := handler.NewAPIHandler()
 	operationLogHandler := handler.NewOperationLogHandler()
+	configHandler := handler.NewConfigHandler()
 
 	// Public routes (no auth required)
 	rg.POST("/login", authHandler.Login)
@@ -80,5 +81,12 @@ func (m *Module) RegisterRoutes(rg *gin.RouterGroup) {
 		auth.GET("/operation-logs/:id", operationLogHandler.GetByID)
 		auth.DELETE("/operation-logs/:id", operationLogHandler.Delete)
 		auth.DELETE("/operation-logs", operationLogHandler.Clear)
+
+		// System configs
+		auth.GET("/configs", configHandler.List)
+		auth.POST("/configs", configHandler.Create)
+		auth.PUT("/configs", configHandler.BatchUpdate)
+		auth.DELETE("/configs/:id", configHandler.Delete)
+		auth.POST("/configs/refresh", configHandler.Refresh)
 	}
 }

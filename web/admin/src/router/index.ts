@@ -43,6 +43,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/monitor/OperationLogList.vue'),
         meta: { title: '操作日志' },
       },
+      {
+        path: 'system/config',
+        name: 'SystemConfig',
+        component: () => import('@/views/system/ConfigList.vue'),
+        meta: { title: '系统配置' },
+      },
     ],
   },
 ]
