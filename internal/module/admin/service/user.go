@@ -23,7 +23,7 @@ type CreateUserRequest struct {
 	Nickname string `json:"nickname"`
 	Email    string `json:"email"`
 	Phone    string `json:"phone"`
-	Status   int8   `json:"status"`
+	Status   *int8  `json:"status"`
 	RoleIDs  []uint `json:"role_ids"`
 }
 
@@ -32,7 +32,7 @@ type UpdateUserRequest struct {
 	Email    string `json:"email"`
 	Phone    string `json:"phone"`
 	Avatar   string `json:"avatar"`
-	Status   int8   `json:"status"`
+	Status   *int8  `json:"status"`
 	Password string `json:"password"`
 	RoleIDs  []uint `json:"role_ids"`
 }
@@ -48,13 +48,18 @@ func (s *UserService) Create(req *CreateUserRequest) error {
 		return errors.New("密码加密失败")
 	}
 
+	status := int8(1)
+	if req.Status != nil {
+		status = *req.Status
+	}
+
 	user := &model.SysUser{
 		Username: req.Username,
 		Password: hashed,
 		Nickname: req.Nickname,
 		Email:    req.Email,
 		Phone:    req.Phone,
-		Status:   req.Status,
+		Status:   status,
 	}
 
 	if err := s.userRepo.Create(user); err != nil {
@@ -89,8 +94,8 @@ func (s *UserService) Update(id uint, req *UpdateUserRequest) error {
 	if req.Avatar != "" {
 		user.Avatar = req.Avatar
 	}
-	if req.Status != 0 {
-		user.Status = req.Status
+	if req.Status != nil {
+		user.Status = *req.Status
 	}
 	if req.Password != "" {
 		hashed, err := utils.HashPassword(req.Password)

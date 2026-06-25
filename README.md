@@ -111,10 +111,10 @@ frame/
 │   └── rbac_model.conf         # Casbin RBAC 模型
 ├── internal/
 │   ├── app/                    # 应用初始化 (Config/Logger/DB/Redis/Casbin/Task)
-│   ├── server/                 # HTTP 服务 & 路由注册 & 静态文件
 │   ├── middleware/             # 中间件 (JWT/Casbin/CORS/Logger)
 │   ├── model/                  # 数据模型 (User/Role/Menu/API)
-│   ├── dao/                    # 数据访问层
+│   ├── server/                 # HTTP 服务 & 路由注册 & 静态文件
+│   ├── repository/             # 数据访问层
 │   ├── tasks/                  # 任务定义与注册（Handler + 定时任务）
 │   ├── module/
 │   │   ├── admin/              # Admin 后台模块

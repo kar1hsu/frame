@@ -23,10 +23,6 @@ func (h *RoleHandler) Create(c *gin.Context) {
 		response.Fail(c, 10001, "参数错误: "+err.Error())
 		return
 	}
-	if req.Status == 0 {
-		req.Status = 1
-	}
-
 	if err := h.svc.Create(&req); err != nil {
 		response.Fail(c, 10000, err.Error())
 		return

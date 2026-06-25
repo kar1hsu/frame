@@ -25,24 +25,20 @@ func (h *UserHandler) Create(c *gin.Context) {
 		response.Fail(c, 10001, "参数错误: "+err.Error())
 		return
 	}
-	if req.Status == 0 {
-		req.Status = 1
-	}
-
 	if err := h.svc.Create(&req); err != nil {
 		response.Fail(c, 10000, err.Error())
 		return
 	}
 
-	// Example: enqueue a welcome email task after user creation
+	// Example: enqueue a welcome email task after user creation.
+	// Failure here must not fail the request — the user has already been created.
 	if req.Email != "" {
-		_, err := app.TaskMgr.Client.Enqueue(tasks.TypeEmailSend, tasks.EmailPayload{
+		if _, err := app.TaskMgr.Client.Enqueue(tasks.TypeEmailSend, tasks.EmailPayload{
 			To:      req.Email,
 			Subject: "欢迎注册",
 			Body:    "您的账号 " + req.Username + " 已创建成功。",
-		})
-		if err != nil {
-			return
+		}); err != nil {
+			app.Log.Errorw("enqueue welcome email failed", "username", req.Username, "err", err)
 		}
 	}
 

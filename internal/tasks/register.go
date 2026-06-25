@@ -15,7 +15,7 @@ func RegisterHandlers(w *task.Worker) {
 func RegisterCronJobs(s *task.Scheduler) {
 	// Daily cleanup at 2:00 AM
 	s.Register(task.CronTask{
-		Cron:     utils.EverySeconds(10),
+		Cron:     utils.DailyAt(2, 0),
 		TypeName: TypeCleanup,
 		Payload:  nil,
 		Queue:    "low",

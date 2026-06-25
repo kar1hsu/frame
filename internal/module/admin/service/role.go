@@ -22,14 +22,14 @@ type CreateRoleRequest struct {
 	Name   string `json:"name" binding:"required"`
 	Code   string `json:"code" binding:"required"`
 	Sort   int    `json:"sort"`
-	Status int8   `json:"status"`
+	Status *int8  `json:"status"`
 	Remark string `json:"remark"`
 }
 
 type UpdateRoleRequest struct {
 	Name   string `json:"name"`
 	Sort   int    `json:"sort"`
-	Status int8   `json:"status"`
+	Status *int8  `json:"status"`
 	Remark string `json:"remark"`
 }
 
@@ -51,11 +51,16 @@ func (s *RoleService) Create(req *CreateRoleRequest) error {
 		return errors.New("角色编码已存在")
 	}
 
+	status := int8(1)
+	if req.Status != nil {
+		status = *req.Status
+	}
+
 	role := &model.SysRole{
 		Name:   req.Name,
 		Code:   req.Code,
 		Sort:   req.Sort,
-		Status: req.Status,
+		Status: status,
 		Remark: req.Remark,
 	}
 	return s.roleRepo.Create(role)
@@ -75,8 +80,8 @@ func (s *RoleService) Update(id uint, req *UpdateRoleRequest) error {
 		role.Name = req.Name
 	}
 	role.Sort = req.Sort
-	if req.Status != 0 {
-		role.Status = req.Status
+	if req.Status != nil {
+		role.Status = *req.Status
 	}
 	if req.Remark != "" {
 		role.Remark = req.Remark
