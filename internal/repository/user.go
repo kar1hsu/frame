@@ -22,14 +22,18 @@ func (d *UserRepo) Create(user *model.SysUser) error {
 
 func (d *UserRepo) GetByID(id uint) (*model.SysUser, error) {
 	var user model.SysUser
-	err := d.db().Preload("Roles").First(&user, id).Error
-	return &user, err
+	if err := d.db().Preload("Roles").First(&user, id).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func (d *UserRepo) GetByUsername(username string) (*model.SysUser, error) {
 	var user model.SysUser
-	err := d.db().Preload("Roles").Where("username = ?", username).First(&user).Error
-	return &user, err
+	if err := d.db().Preload("Roles").Where("username = ?", username).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func (d *UserRepo) Update(user *model.SysUser) error {

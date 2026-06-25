@@ -22,8 +22,10 @@ func (d *MenuRepo) Create(menu *model.SysMenu) error {
 
 func (d *MenuRepo) GetByID(id uint) (*model.SysMenu, error) {
 	var menu model.SysMenu
-	err := d.db().Preload("APIs").First(&menu, id).Error
-	return &menu, err
+	if err := d.db().Preload("APIs").First(&menu, id).Error; err != nil {
+		return nil, err
+	}
+	return &menu, nil
 }
 
 func (d *MenuRepo) Update(menu *model.SysMenu) error {

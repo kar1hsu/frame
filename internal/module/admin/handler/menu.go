@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kar1hsu/frame/internal/middleware"
 	"github.com/kar1hsu/frame/internal/module/admin/service"
+	"github.com/kar1hsu/frame/internal/pkg/errcode"
 	"github.com/kar1hsu/frame/internal/pkg/response"
 )
 
@@ -20,7 +21,7 @@ func NewMenuHandler() *MenuHandler {
 func (h *MenuHandler) Create(c *gin.Context) {
 	var req service.CreateMenuRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, 10001, "参数错误: "+err.Error())
+		response.Fail(c, errcode.ErrParam, "参数错误: "+err.Error())
 		return
 	}
 	if req.Status == 0 {
@@ -31,7 +32,7 @@ func (h *MenuHandler) Create(c *gin.Context) {
 	}
 
 	if err := h.svc.Create(&req); err != nil {
-		response.Fail(c, 10000, err.Error())
+		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
 	response.OK(c, nil)
@@ -40,13 +41,13 @@ func (h *MenuHandler) Create(c *gin.Context) {
 func (h *MenuHandler) GetByID(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		response.Fail(c, 10001, "参数错误")
+		response.Fail(c, errcode.ErrParam, "参数错误")
 		return
 	}
 
 	menu, err := h.svc.GetByID(uint(id))
 	if err != nil {
-		response.Fail(c, 50001, "菜单不存在")
+		response.Fail(c, errcode.ErrMenuNotFound, "菜单不存在")
 		return
 	}
 	response.OK(c, menu)
@@ -55,18 +56,18 @@ func (h *MenuHandler) GetByID(c *gin.Context) {
 func (h *MenuHandler) Update(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		response.Fail(c, 10001, "参数错误")
+		response.Fail(c, errcode.ErrParam, "参数错误")
 		return
 	}
 
 	var req service.UpdateMenuRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, 10001, "参数错误: "+err.Error())
+		response.Fail(c, errcode.ErrParam, "参数错误: "+err.Error())
 		return
 	}
 
 	if err := h.svc.Update(uint(id), &req); err != nil {
-		response.Fail(c, 10000, err.Error())
+		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
 	response.OK(c, nil)
@@ -75,12 +76,12 @@ func (h *MenuHandler) Update(c *gin.Context) {
 func (h *MenuHandler) Delete(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		response.Fail(c, 10001, "参数错误")
+		response.Fail(c, errcode.ErrParam, "参数错误")
 		return
 	}
 
 	if err := h.svc.Delete(uint(id)); err != nil {
-		response.Fail(c, 10000, err.Error())
+		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
 	response.OK(c, nil)
@@ -89,7 +90,7 @@ func (h *MenuHandler) Delete(c *gin.Context) {
 func (h *MenuHandler) GetTree(c *gin.Context) {
 	tree, err := h.svc.GetTree()
 	if err != nil {
-		response.Fail(c, 10000, err.Error())
+		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
 	response.OK(c, tree)
@@ -99,7 +100,7 @@ func (h *MenuHandler) GetUserMenuTree(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	tree, err := h.svc.GetUserMenuTree(userID)
 	if err != nil {
-		response.Fail(c, 10000, err.Error())
+		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
 	response.OK(c, tree)

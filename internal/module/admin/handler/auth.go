@@ -7,6 +7,7 @@ import (
 	"github.com/kar1hsu/frame/internal/middleware"
 	"github.com/kar1hsu/frame/internal/module/admin/service"
 	"github.com/kar1hsu/frame/internal/pkg/cache"
+	"github.com/kar1hsu/frame/internal/pkg/errcode"
 	"github.com/kar1hsu/frame/internal/pkg/response"
 )
 
@@ -21,13 +22,13 @@ func NewAuthHandler() *AuthHandler {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req service.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, 10001, "参数错误: "+err.Error())
+		response.Fail(c, errcode.ErrParam, "参数错误: "+err.Error())
 		return
 	}
 
 	res, err := h.svc.Login(&req, c.ClientIP())
 	if err != nil {
-		response.Fail(c, 20003, err.Error())
+		response.Fail(c, errcode.ErrPasswordWrong, err.Error())
 		return
 	}
 
@@ -52,7 +53,7 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 	userSvc := service.NewUserService()
 	user, err := userSvc.GetProfile(userID)
 	if err != nil {
-		response.Fail(c, 20002, err.Error())
+		response.Fail(c, errcode.ErrUserNotFound, err.Error())
 		return
 	}
 	response.OK(c, user)
@@ -70,7 +71,7 @@ func (h *AuthHandler) GetPermissions(c *gin.Context) {
 	menuSvc := service.NewMenuService()
 	perms, err := menuSvc.GetUserPermissions(userID)
 	if err != nil {
-		response.Fail(c, 10000, err.Error())
+		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
 

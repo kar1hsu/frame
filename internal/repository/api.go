@@ -22,8 +22,10 @@ func (d *ApiRepo) Create(api *model.SysAPI) error {
 
 func (d *ApiRepo) GetByID(id uint) (*model.SysAPI, error) {
 	var api model.SysAPI
-	err := d.db().First(&api, id).Error
-	return &api, err
+	if err := d.db().First(&api, id).Error; err != nil {
+		return nil, err
+	}
+	return &api, nil
 }
 
 func (d *ApiRepo) Update(api *model.SysAPI) error {

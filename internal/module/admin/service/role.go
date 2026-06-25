@@ -76,7 +76,7 @@ func (s *RoleService) GetByID(id uint) (*model.SysRole, error) {
 func (s *RoleService) Update(id uint, req *UpdateRoleRequest) error {
 	role, err := s.roleRepo.GetByID(id)
 	if err != nil {
-		return errors.New("角色不存在")
+		return notFoundOr(err, "角色不存在")
 	}
 
 	if req.Name != "" {
@@ -95,7 +95,7 @@ func (s *RoleService) Update(id uint, req *UpdateRoleRequest) error {
 func (s *RoleService) Delete(id uint) error {
 	role, err := s.roleRepo.GetByID(id)
 	if err != nil {
-		return errors.New("角色不存在")
+		return notFoundOr(err, "角色不存在")
 	}
 
 	if role.Code == model.SuperAdminRoleCode {
@@ -153,7 +153,7 @@ func (s *RoleService) SetMenus(roleID uint, menuIDs []uint) error {
 func (s *RoleService) SetAPIs(roleID uint, apis []RoleAPIItem) error {
 	role, err := s.roleRepo.GetByID(roleID)
 	if err != nil {
-		return errors.New("角色不存在")
+		return notFoundOr(err, "角色不存在")
 	}
 
 	// Clear old policies
@@ -172,7 +172,7 @@ func (s *RoleService) SetAPIs(roleID uint, apis []RoleAPIItem) error {
 func (s *RoleService) GetAPIs(roleID uint) ([]RoleAPIItem, error) {
 	role, err := s.roleRepo.GetByID(roleID)
 	if err != nil {
-		return nil, errors.New("角色不存在")
+		return nil, notFoundOr(err, "角色不存在")
 	}
 
 	policies := app.Enforcer.GetFilteredPolicy(0, role.Code)

@@ -22,14 +22,18 @@ func (d *RoleRepo) Create(role *model.SysRole) error {
 
 func (d *RoleRepo) GetByID(id uint) (*model.SysRole, error) {
 	var role model.SysRole
-	err := d.db().Preload("Menus").First(&role, id).Error
-	return &role, err
+	if err := d.db().Preload("Menus").First(&role, id).Error; err != nil {
+		return nil, err
+	}
+	return &role, nil
 }
 
 func (d *RoleRepo) GetByCode(code string) (*model.SysRole, error) {
 	var role model.SysRole
-	err := d.db().Where("code = ?", code).First(&role).Error
-	return &role, err
+	if err := d.db().Where("code = ?", code).First(&role).Error; err != nil {
+		return nil, err
+	}
+	return &role, nil
 }
 
 func (d *RoleRepo) Update(role *model.SysRole) error {

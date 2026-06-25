@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/kar1hsu/frame/internal/module/admin/service"
+	"github.com/kar1hsu/frame/internal/pkg/errcode"
 	"github.com/kar1hsu/frame/internal/pkg/response"
 	"github.com/kar1hsu/frame/internal/pkg/utils"
 )
@@ -20,11 +21,11 @@ func NewRoleHandler() *RoleHandler {
 func (h *RoleHandler) Create(c *gin.Context) {
 	var req service.CreateRoleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, 10001, "参数错误: "+err.Error())
+		response.Fail(c, errcode.ErrParam, "参数错误: "+err.Error())
 		return
 	}
 	if err := h.svc.Create(&req); err != nil {
-		response.Fail(c, 10000, err.Error())
+		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
 	response.OK(c, nil)
@@ -33,13 +34,13 @@ func (h *RoleHandler) Create(c *gin.Context) {
 func (h *RoleHandler) GetByID(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		response.Fail(c, 10001, "参数错误")
+		response.Fail(c, errcode.ErrParam, "参数错误")
 		return
 	}
 
 	role, err := h.svc.GetByID(uint(id))
 	if err != nil {
-		response.Fail(c, 40002, "角色不存在")
+		response.Fail(c, errcode.ErrRoleNotFound, "角色不存在")
 		return
 	}
 	response.OK(c, role)
@@ -48,18 +49,18 @@ func (h *RoleHandler) GetByID(c *gin.Context) {
 func (h *RoleHandler) Update(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		response.Fail(c, 10001, "参数错误")
+		response.Fail(c, errcode.ErrParam, "参数错误")
 		return
 	}
 
 	var req service.UpdateRoleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, 10001, "参数错误: "+err.Error())
+		response.Fail(c, errcode.ErrParam, "参数错误: "+err.Error())
 		return
 	}
 
 	if err := h.svc.Update(uint(id), &req); err != nil {
-		response.Fail(c, 10000, err.Error())
+		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
 	response.OK(c, nil)
@@ -68,12 +69,12 @@ func (h *RoleHandler) Update(c *gin.Context) {
 func (h *RoleHandler) Delete(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		response.Fail(c, 10001, "参数错误")
+		response.Fail(c, errcode.ErrParam, "参数错误")
 		return
 	}
 
 	if err := h.svc.Delete(uint(id)); err != nil {
-		response.Fail(c, 10000, err.Error())
+		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
 	response.OK(c, nil)
@@ -83,7 +84,7 @@ func (h *RoleHandler) List(c *gin.Context) {
 	p := utils.GetPagination(c)
 	roles, total, err := h.svc.List(p.Page, p.PageSize)
 	if err != nil {
-		response.Fail(c, 10000, err.Error())
+		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
 	response.OK(c, gin.H{
@@ -97,7 +98,7 @@ func (h *RoleHandler) List(c *gin.Context) {
 func (h *RoleHandler) ListAll(c *gin.Context) {
 	roles, err := h.svc.ListAll()
 	if err != nil {
-		response.Fail(c, 10000, err.Error())
+		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
 	response.OK(c, roles)
@@ -106,18 +107,18 @@ func (h *RoleHandler) ListAll(c *gin.Context) {
 func (h *RoleHandler) SetMenus(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		response.Fail(c, 10001, "参数错误")
+		response.Fail(c, errcode.ErrParam, "参数错误")
 		return
 	}
 
 	var req service.SetRoleMenusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, 10001, "参数错误: "+err.Error())
+		response.Fail(c, errcode.ErrParam, "参数错误: "+err.Error())
 		return
 	}
 
 	if err := h.svc.SetMenus(uint(id), req.MenuIDs); err != nil {
-		response.Fail(c, 10000, err.Error())
+		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
 	response.OK(c, nil)
@@ -126,18 +127,18 @@ func (h *RoleHandler) SetMenus(c *gin.Context) {
 func (h *RoleHandler) SetAPIs(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		response.Fail(c, 10001, "参数错误")
+		response.Fail(c, errcode.ErrParam, "参数错误")
 		return
 	}
 
 	var req service.SetRoleAPIsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, 10001, "参数错误: "+err.Error())
+		response.Fail(c, errcode.ErrParam, "参数错误: "+err.Error())
 		return
 	}
 
 	if err := h.svc.SetAPIs(uint(id), req.APIs); err != nil {
-		response.Fail(c, 10000, err.Error())
+		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
 	response.OK(c, nil)
@@ -146,13 +147,13 @@ func (h *RoleHandler) SetAPIs(c *gin.Context) {
 func (h *RoleHandler) GetAPIs(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		response.Fail(c, 10001, "参数错误")
+		response.Fail(c, errcode.ErrParam, "参数错误")
 		return
 	}
 
 	apis, err := h.svc.GetAPIs(uint(id))
 	if err != nil {
-		response.Fail(c, 10000, err.Error())
+		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
 	response.OK(c, apis)

@@ -76,7 +76,7 @@ func (s *MenuService) GetByID(id uint) (*model.SysMenu, error) {
 func (s *MenuService) Update(id uint, req *UpdateMenuRequest) error {
 	menu, err := s.menuRepo.GetByID(id)
 	if err != nil {
-		return errors.New("菜单不存在")
+		return notFoundOr(err, "菜单不存在")
 	}
 
 	if req.ParentID != nil {
@@ -134,7 +134,7 @@ func (s *MenuService) GetUserMenuTree(userID uint) ([]*model.SysMenu, error) {
 	userDAO := repository.NewUserRepo()
 	user, err := userDAO.GetByID(userID)
 	if err != nil {
-		return nil, errors.New("用户不存在")
+		return nil, notFoundOr(err, "用户不存在")
 	}
 
 	menuIDSet := make(map[uint]bool)
@@ -178,7 +178,7 @@ func (s *MenuService) GetUserPermissions(userID uint) ([]string, error) {
 	userDAO := repository.NewUserRepo()
 	user, err := userDAO.GetByID(userID)
 	if err != nil {
-		return nil, errors.New("用户不存在")
+		return nil, notFoundOr(err, "用户不存在")
 	}
 
 	// Super admin has all permissions

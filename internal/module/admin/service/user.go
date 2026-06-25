@@ -6,7 +6,6 @@ import (
 	"github.com/kar1hsu/frame/internal/model"
 	"github.com/kar1hsu/frame/internal/pkg/utils"
 	"github.com/kar1hsu/frame/internal/repository"
-	"gorm.io/gorm"
 )
 
 type UserService struct {
@@ -79,7 +78,7 @@ func (s *UserService) GetByID(id uint) (*model.SysUser, error) {
 func (s *UserService) Update(id uint, req *UpdateUserRequest) error {
 	user, err := s.userRepo.GetByID(id)
 	if err != nil {
-		return errors.New("用户不存在")
+		return notFoundOr(err, "用户不存在")
 	}
 
 	if req.Nickname != "" {
@@ -126,10 +125,7 @@ func (s *UserService) List(page, pageSize int) ([]model.SysUser, int64, error) {
 func (s *UserService) GetProfile(id uint) (*model.SysUser, error) {
 	user, err := s.userRepo.GetByID(id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("用户不存在")
-		}
-		return nil, err
+		return nil, notFoundOr(err, "用户不存在")
 	}
 	return user, nil
 }

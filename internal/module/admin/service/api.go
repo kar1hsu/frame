@@ -1,8 +1,6 @@
 package service
 
 import (
-	"errors"
-
 	"github.com/kar1hsu/frame/internal/model"
 	"github.com/kar1hsu/frame/internal/repository"
 )
@@ -46,7 +44,7 @@ func (s *APIService) GetByID(id uint) (*model.SysAPI, error) {
 func (s *APIService) Update(id uint, req *UpdateAPIRequest) error {
 	api, err := s.apiRepo.GetByID(id)
 	if err != nil {
-		return errors.New("API 不存在")
+		return notFoundOr(err, "API 不存在")
 	}
 	if req.Path != "" {
 		api.Path = req.Path
