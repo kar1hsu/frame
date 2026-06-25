@@ -44,6 +44,7 @@ services:
     environment:
       - DATABASE_HOST=mysql
       - REDIS_HOST=redis
+      - TIMEZONE=${TZ:-Asia/Shanghai}
     volumes:
       - ./config.yaml:/app/config/config.yaml
       - app_logs:/app/logs
@@ -61,6 +62,7 @@ services:
     environment:
       - DATABASE_HOST=mysql
       - REDIS_HOST=redis
+      - TIMEZONE=${TZ:-Asia/Shanghai}
     volumes:
       - ./config.yaml:/app/config/config.yaml
       - app_logs:/app/logs
@@ -79,6 +81,7 @@ services:
     environment:
       - DATABASE_HOST=mysql
       - REDIS_HOST=redis
+      - TIMEZONE=${TZ:-Asia/Shanghai}
     volumes:
       - ./config.yaml:/app/config/config.yaml
       - app_logs:/app/logs

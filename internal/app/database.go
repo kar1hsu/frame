@@ -41,9 +41,9 @@ func InitDatabase() error {
 	var dialector gorm.Dialector
 	switch cfg.Driver {
 	case "postgres":
-		dialector = postgres.Open(cfg.DSN())
+		dialector = postgres.Open(cfg.DSN(Cfg.Timezone))
 	case "mysql":
-		dialector = mysql.Open(cfg.DSN())
+		dialector = mysql.Open(cfg.DSN(Cfg.Timezone))
 	default:
 		return fmt.Errorf("unsupported database driver: %s", cfg.Driver)
 	}

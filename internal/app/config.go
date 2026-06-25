@@ -3,11 +3,13 @@ package app
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 )
 
 type Config struct {
+	Timezone string         `mapstructure:"timezone"`
 	Server   ServerConfig   `mapstructure:"server"`
 	Database DatabaseConfig `mapstructure:"database"`
 	Redis    RedisConfig    `mapstructure:"redis"`
@@ -41,12 +43,15 @@ type DatabaseConfig struct {
 	LogLevel     string `mapstructure:"log_level"`
 }
 
-func (d *DatabaseConfig) DSN() string {
+// DSN builds the database connection string. timezone (an IANA name like
+// Asia/Shanghai) is applied to Postgres directly; MySQL uses loc=Local, which
+// follows the process-wide time.Local set by InitTimezone.
+func (d *DatabaseConfig) DSN(timezone string) string {
 	switch d.Driver {
 	case "postgres":
 		return fmt.Sprintf(
-			"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable TimeZone=Asia/Shanghai",
-			d.Host, d.Port, d.Username, d.Password, d.DBName,
+			"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable TimeZone=%s",
+			d.Host, d.Port, d.Username, d.Password, d.DBName, timezone,
 		)
 	default:
 		return fmt.Sprintf(
@@ -123,12 +128,25 @@ func InitConfig(cfgFile string) error {
 }
 
 func setConfigDefaults() {
+	viper.SetDefault("timezone", "Asia/Shanghai")
 	viper.SetDefault("server.port", 8080)
 	viper.SetDefault("server.mode", "debug")
 	viper.SetDefault("database.max_idle_conns", 10)
 	viper.SetDefault("database.max_open_conns", 100)
 	viper.SetDefault("jwt.expire", 7200)
 	viper.SetDefault("task.concurrency", 10)
+}
+
+// InitTimezone sets the process-wide time.Local from config so that every
+// time.Now()/time.Local usage — logs, JWT, GORM timestamps, MySQL loc=Local,
+// the asynq scheduler — shares one timezone. Call right after InitConfig.
+func InitTimezone() error {
+	loc, err := time.LoadLocation(Cfg.Timezone)
+	if err != nil {
+		return fmt.Errorf("load timezone %q: %w", Cfg.Timezone, err)
+	}
+	time.Local = loc
+	return nil
 }
 
 // validateConfig fails fast on missing required fields and rejects weak or

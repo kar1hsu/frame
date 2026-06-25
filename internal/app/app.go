@@ -7,8 +7,13 @@ func Init(cfgFile string) error {
 		return fmt.Errorf("init config: %w", err)
 	}
 
+	if err := InitTimezone(); err != nil {
+		return fmt.Errorf("init timezone: %w", err)
+	}
+
 	InitLogger()
 	Log.Info("config loaded successfully")
+	Log.Infof("timezone set to %s", Cfg.Timezone)
 
 	if Cfg.JWT.Secret == defaultJWTSecret {
 		Log.Warn("jwt.secret 仍为默认值，部署生产前请务必修改")

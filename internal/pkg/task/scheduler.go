@@ -35,7 +35,10 @@ func NewScheduler(redisAddr, password string, db int) *Scheduler {
 			Password: password,
 			DB:       db,
 		},
-		nil,
+		// Location follows the process-wide time.Local (set by app.InitTimezone),
+		// so cron expressions like DailyAt(2,0) fire in the configured timezone
+		// instead of asynq's default UTC.
+		&asynq.SchedulerOpts{Location: time.Local},
 	)
 	return &Scheduler{scheduler: s}
 }

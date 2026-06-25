@@ -1,3 +1,7 @@
+# 全局时区，统一日志 / JWT / 数据库 / 定时任务等所有带时区的地方（IANA 名，如 Asia/Shanghai、UTC）
+# docker 部署时可由 compose 的 TIMEZONE 环境变量覆盖
+timezone: Asia/Shanghai
+
 server:
   port: 8080
   mode: debug # debug | release | test
