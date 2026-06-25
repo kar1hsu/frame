@@ -40,6 +40,8 @@ func InitLogger() {
 		MaxSize:    cfg.MaxSize,
 		MaxBackups: cfg.MaxBackups,
 		MaxAge:     cfg.MaxAge,
+		Compress:   true, // 轮转的旧日志 gzip 压缩，省磁盘
+		LocalTime:  true, // 轮转文件名用本地时间，与业务时区一致
 	}
 
 	core := zapcore.NewTee(

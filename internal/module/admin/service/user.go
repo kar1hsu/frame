@@ -19,7 +19,7 @@ func NewUserService() *UserService {
 
 type CreateUserRequest struct {
 	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required,min=6"`
+	Password string `json:"password" binding:"required,min=6,max=72"`
 	Nickname string `json:"nickname"`
 	Email    string `json:"email"`
 	Phone    string `json:"phone"`
@@ -33,7 +33,7 @@ type UpdateUserRequest struct {
 	Phone    string `json:"phone"`
 	Avatar   string `json:"avatar"`
 	Status   *int8  `json:"status"`
-	Password string `json:"password"`
+	Password string `json:"password" binding:"omitempty,min=6,max=72"`
 	RoleIDs  []uint `json:"role_ids"`
 }
 

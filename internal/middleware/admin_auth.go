@@ -53,7 +53,8 @@ func GetUserID(c *gin.Context) uint {
 	if !exists {
 		return 0
 	}
-	return val.(uint)
+	id, _ := val.(uint)
+	return id
 }
 
 func GetRoleCode(c *gin.Context) string {
@@ -61,5 +62,6 @@ func GetRoleCode(c *gin.Context) string {
 	if !exists {
 		return ""
 	}
-	return val.(string)
+	code, _ := val.(string)
+	return code
 }

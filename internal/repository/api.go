@@ -44,7 +44,9 @@ func (d *ApiRepo) List(page, pageSize int) ([]model.SysAPI, int64, error) {
 	var apis []model.SysAPI
 	var total int64
 	db := d.db().Model(&model.SysAPI{})
-	db.Count(&total)
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	err := db.Offset((page - 1) * pageSize).Limit(pageSize).
 		Order("`group` ASC, id ASC").Find(&apis).Error
 	return apis, total, err

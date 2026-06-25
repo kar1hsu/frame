@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kar1hsu/frame/internal/app"
 	"github.com/kar1hsu/frame/internal/pkg/cache"
 	jwtpkg "github.com/kar1hsu/frame/internal/pkg/jwt"
 	"github.com/kar1hsu/frame/internal/pkg/utils"
@@ -79,6 +78,14 @@ func (s *AuthService) Login(req *LoginRequest, ip string) (*LoginResponse, error
 }
 
 func (s *AuthService) Logout(token string) error {
-	expiration := time.Duration(app.Cfg.JWT.Expire) * time.Second
-	return cache.BlacklistToken(token, expiration)
+	claims, err := jwtpkg.ParseToken(token)
+	if err != nil {
+		return nil // 无效/已过期的 token 无需拉黑
+	}
+	ttl := time.Until(claims.ExpiresAt.Time)
+	if ttl <= 0 {
+		return nil // 已过期，拉黑无意义
+	}
+	// 只按 token 的剩余寿命拉黑，避免黑名单条目长期占用 Redis
+	return cache.BlacklistToken(token, ttl)
 }

@@ -45,7 +45,9 @@ func (d *UserRepo) List(page, pageSize int) ([]model.SysUser, int64, error) {
 	var total int64
 
 	db := d.db().Model(&model.SysUser{})
-	db.Count(&total)
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	err := db.Preload("Roles").Offset((page - 1) * pageSize).Limit(pageSize).
 		Order("id DESC").Find(&users).Error
 	return users, total, err

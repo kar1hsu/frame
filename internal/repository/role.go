@@ -45,7 +45,9 @@ func (d *RoleRepo) List(page, pageSize int) ([]model.SysRole, int64, error) {
 	var total int64
 
 	db := d.db().Model(&model.SysRole{})
-	db.Count(&total)
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	err := db.Offset((page - 1) * pageSize).Limit(pageSize).
 		Order("sort ASC, id ASC").Find(&roles).Error
 	return roles, total, err
