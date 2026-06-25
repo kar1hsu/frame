@@ -12,6 +12,7 @@ func AutoMigrate() error {
 		&model.SysRole{},
 		&model.SysMenu{},
 		&model.SysAPI{},
+		&model.SysOperationLog{},
 	)
 }
 
@@ -148,4 +149,91 @@ func SeedData() error {
 	Log.Warn("已创建默认管理员 admin/admin123，请登录后立即修改密码")
 	Log.Info("seed data completed")
 	return nil
+}
+
+// SeedMenus idempotently inserts menus/APIs that were added after the initial
+// SeedData, so existing deployments pick them up on restart without a full
+// re-seed. Safe to run on every startup.
+func SeedMenus() error {
+	return seedOperationLogMenu()
+}
+
+// seedOperationLogMenu adds the 系统监控 > 操作日志 menu (with its buttons and
+// API records) and grants it to the admin role. Gated on the list permission so
+// it runs at most once.
+func seedOperationLogMenu() error {
+	var cnt int64
+	if err := DB.Model(&model.SysMenu{}).
+		Where("permission = ?", "monitor:operlog:list").Count(&cnt).Error; err != nil {
+		return err
+	}
+	if cnt > 0 {
+		return nil
+	}
+
+	Log.Info("seeding operation-log menu...")
+	return DB.Transaction(func(tx *gorm.DB) error {
+		// APIs (FirstOrCreate by path+method so reruns/manual rows don't dup)
+		apis := []model.SysAPI{
+			{Path: "/admin/operation-logs", Method: "GET", Group: "操作日志", Description: "日志列表"},
+			{Path: "/admin/operation-logs/:id", Method: "GET", Group: "操作日志", Description: "日志详情"},
+			{Path: "/admin/operation-logs/:id", Method: "DELETE", Group: "操作日志", Description: "删除日志"},
+			{Path: "/admin/operation-logs", Method: "DELETE", Group: "操作日志", Description: "清空日志"},
+		}
+		for i := range apis {
+			if err := tx.Where("path = ? AND method = ?", apis[i].Path, apis[i].Method).
+				FirstOrCreate(&apis[i]).Error; err != nil {
+				return err
+			}
+		}
+
+		// 系统监控 directory (reuse if it already exists)
+		dir := model.SysMenu{Name: "系统监控", Path: "/monitor", Icon: "Monitor", Sort: 2, Type: 0, Visible: 1, Status: 1}
+		dirRes := tx.Where("name = ? AND parent_id = 0", "系统监控").
+			Attrs(model.SysMenu{Path: "/monitor", Icon: "Monitor", Sort: 2, Type: 0, Visible: 1, Status: 1}).
+			FirstOrCreate(&dir)
+		if dirRes.Error != nil {
+			return dirRes.Error
+		}
+
+		// 操作日志 menu + buttons
+		listMenu := model.SysMenu{
+			ParentID: dir.ID, Name: "操作日志", Path: "/monitor/operlog", Component: "monitor/operlog/index",
+			Icon: "Document", Sort: 1, Type: 1, Permission: "monitor:operlog:list", Visible: 1, Status: 1,
+			APIs: []model.SysAPI{apis[0], apis[1]},
+		}
+		deleteBtn := model.SysMenu{
+			ParentID: 0, Name: "删除日志", Sort: 2, Type: 2, Permission: "monitor:operlog:delete", Visible: 1, Status: 1,
+			APIs: []model.SysAPI{apis[2]},
+		}
+		clearBtn := model.SysMenu{
+			ParentID: 0, Name: "清空日志", Sort: 3, Type: 2, Permission: "monitor:operlog:clear", Visible: 1, Status: 1,
+			APIs: []model.SysAPI{apis[3]},
+		}
+		if err := tx.Create(&listMenu).Error; err != nil {
+			return err
+		}
+		deleteBtn.ParentID = listMenu.ID
+		clearBtn.ParentID = listMenu.ID
+		if err := tx.Create(&deleteBtn).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(&clearBtn).Error; err != nil {
+			return err
+		}
+
+		// Grant the new menus to the admin role for display in its menu tree.
+		var admin model.SysRole
+		if err := tx.Where("code = ?", "admin").First(&admin).Error; err != nil {
+			return err
+		}
+		grant := []model.SysMenu{listMenu, deleteBtn, clearBtn}
+		if dirRes.RowsAffected > 0 { // dir newly created → also grant it
+			grant = append([]model.SysMenu{dir}, grant...)
+		}
+		if err := tx.Model(&admin).Association("Menus").Append(grant); err != nil {
+			return err
+		}
+		return nil
+	})
 }

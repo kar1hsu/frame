@@ -22,6 +22,7 @@ func (m *Module) RegisterRoutes(rg *gin.RouterGroup) {
 	roleHandler := handler.NewRoleHandler()
 	menuHandler := handler.NewMenuHandler()
 	apiHandler := handler.NewAPIHandler()
+	operationLogHandler := handler.NewOperationLogHandler()
 
 	// Public routes (no auth required)
 	rg.POST("/login", authHandler.Login)
@@ -41,7 +42,8 @@ func (m *Module) RegisterRoutes(rg *gin.RouterGroup) {
 
 	// Protected routes (JWT + Casbin RBAC)
 	// For: CRUD management operations
-	auth := rg.Group("", middleware.AdminAuth(), middleware.CasbinRBAC())
+	// OperationLog sits between auth and RBAC so denied (403) attempts are still audited.
+	auth := rg.Group("", middleware.AdminAuth(), middleware.OperationLog(), middleware.CasbinRBAC())
 	{
 		// Users
 		auth.GET("/users", userHandler.List)
@@ -72,5 +74,11 @@ func (m *Module) RegisterRoutes(rg *gin.RouterGroup) {
 		auth.GET("/apis/:id", apiHandler.GetByID)
 		auth.PUT("/apis/:id", apiHandler.Update)
 		auth.DELETE("/apis/:id", apiHandler.Delete)
+
+		// Operation logs (audit)
+		auth.GET("/operation-logs", operationLogHandler.List)
+		auth.GET("/operation-logs/:id", operationLogHandler.GetByID)
+		auth.DELETE("/operation-logs/:id", operationLogHandler.Delete)
+		auth.DELETE("/operation-logs", operationLogHandler.Clear)
 	}
 }

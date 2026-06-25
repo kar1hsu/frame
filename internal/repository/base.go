@@ -16,11 +16,21 @@ import (
 type QueryOptions struct {
 	Where    map[string]interface{} // equality conditions (ANDed)
 	Search   map[string]string      // field -> keyword, rendered as "field LIKE %kw%"
+	Conds    []Cond                 // raw conditions for ranges/ORs Where/Search can't express
 	Order    []string               // e.g. ["created_at DESC", "id ASC"]
 	Preloads []string               // associations to preload
 	Select   []string               // projection columns
 	Group    string
 	Having   map[string]interface{}
+}
+
+// Cond is a raw query fragment for predicates that Where (equality) and Search
+// (single-field LIKE) can't express — ranges, multi-field ORs, IN, etc. Query is
+// passed verbatim to GORM's Where; like the rest of QueryOptions it is trusted
+// server-side SQL, never raw client input.
+type Cond struct {
+	Query string
+	Args  []interface{}
 }
 
 // applyFilter applies only the row-filtering parts (shared by List and Count).
@@ -34,6 +44,11 @@ func (q *QueryOptions) applyFilter(db *gorm.DB) *gorm.DB {
 	for field, kw := range q.Search {
 		if kw != "" {
 			db = db.Where(field+" LIKE ?", "%"+kw+"%")
+		}
+	}
+	for _, c := range q.Conds {
+		if c.Query != "" {
+			db = db.Where(c.Query, c.Args...)
 		}
 	}
 	if q.Group != "" {

@@ -67,6 +67,15 @@ func GetUserID(c *gin.Context) uint {
 	return id
 }
 
+func GetUsername(c *gin.Context) string {
+	val, exists := c.Get(CtxUsernameKey)
+	if !exists {
+		return ""
+	}
+	name, _ := val.(string)
+	return name
+}
+
 func GetRoleCodes(c *gin.Context) []string {
 	val, exists := c.Get(CtxRoleCodesKey)
 	if !exists {

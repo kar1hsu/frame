@@ -34,6 +34,10 @@ func main() {
 		app.Log.Warnf("seed data: %v", err)
 	}
 
+	if err := app.SeedMenus(); err != nil {
+		app.Log.Warnf("seed menus: %v", err)
+	}
+
 	router := server.NewRouter(
 		frame.AdminDist,
 		admin.New(),

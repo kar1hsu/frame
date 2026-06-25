@@ -37,6 +37,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/system/MenuList.vue'),
         meta: { title: '菜单管理' },
       },
+      {
+        path: 'monitor/operlog',
+        name: 'MonitorOperLog',
+        component: () => import('@/views/monitor/OperationLogList.vue'),
+        meta: { title: '操作日志' },
+      },
     ],
   },
 ]
