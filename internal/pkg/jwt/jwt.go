@@ -10,18 +10,20 @@ import (
 )
 
 type Claims struct {
-	UserID   uint   `json:"user_id"`
-	Username string `json:"username"`
-	RoleCode string `json:"role_code"`
+	UserID       uint     `json:"user_id"`
+	Username     string   `json:"username"`
+	RoleCodes    []string `json:"role_codes"`
+	TokenVersion int      `json:"token_version"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(userID uint, username, roleCode string) (string, error) {
+func GenerateToken(userID uint, username string, roleCodes []string, tokenVersion int) (string, error) {
 	cfg := app.Cfg.JWT
 	claims := Claims{
-		UserID:   userID,
-		Username: username,
-		RoleCode: roleCode,
+		UserID:       userID,
+		Username:     username,
+		RoleCodes:    roleCodes,
+		TokenVersion: tokenVersion,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(cfg.Expire) * time.Second)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

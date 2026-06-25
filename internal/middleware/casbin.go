@@ -9,32 +9,33 @@ import (
 
 func CasbinRBAC() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		roleCode := GetRoleCode(c)
-		if roleCode == "" {
+		roleCodes := GetRoleCodes(c)
+		if len(roleCodes) == 0 {
 			response.Forbidden(c, "无法获取用户角色")
-			return
-		}
-
-		// super admin bypasses all checks
-		if roleCode == model.SuperAdminRoleCode {
-			c.Next()
 			return
 		}
 
 		obj := c.Request.URL.Path
 		act := c.Request.Method
 
-		ok, err := app.Enforcer.Enforce(roleCode, obj, act)
-		if err != nil {
-			app.Log.Errorw("casbin enforce error", "error", err)
-			response.Forbidden(c, "权限校验异常")
-			return
-		}
-		if !ok {
-			response.Forbidden(c, "无访问权限")
-			return
+		// 多角色：任一角色是超管或拥有该权限即放行
+		for _, rc := range roleCodes {
+			if rc == model.SuperAdminRoleCode {
+				c.Next()
+				return
+			}
+			ok, err := app.Enforcer.Enforce(rc, obj, act)
+			if err != nil {
+				app.Log.Errorw("casbin enforce error", "error", err)
+				response.Forbidden(c, "权限校验异常")
+				return
+			}
+			if ok {
+				c.Next()
+				return
+			}
 		}
 
-		c.Next()
+		response.Forbidden(c, "无访问权限")
 	}
 }

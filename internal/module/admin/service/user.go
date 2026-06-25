@@ -104,6 +104,11 @@ func (s *UserService) Update(id uint, req *UpdateUserRequest) error {
 		user.Password = hashed
 	}
 
+	// 改密 / 改状态 / 改角色都使该用户已签发的 token 失效（会话撤销）
+	if req.Password != "" || req.Status != nil || req.RoleIDs != nil {
+		user.TokenVersion++
+	}
+
 	if err := s.userRepo.Update(user); err != nil {
 		return err
 	}

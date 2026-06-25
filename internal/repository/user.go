@@ -28,6 +28,16 @@ func (d *UserRepo) GetByID(id uint) (*model.SysUser, error) {
 	return &user, nil
 }
 
+// GetTokenVersion returns the user's current token version, used by the auth
+// middleware for session revocation. Returns an error if the user is gone.
+func (d *UserRepo) GetTokenVersion(id uint) (int, error) {
+	var user model.SysUser
+	if err := d.db().Select("token_version").First(&user, id).Error; err != nil {
+		return 0, err
+	}
+	return user.TokenVersion, nil
+}
+
 func (d *UserRepo) GetByUsername(username string) (*model.SysUser, error) {
 	var user model.SysUser
 	if err := d.db().Preload("Roles").Where("username = ?", username).First(&user).Error; err != nil {
@@ -39,7 +49,7 @@ func (d *UserRepo) GetByUsername(username string) (*model.SysUser, error) {
 func (d *UserRepo) Update(user *model.SysUser) error {
 	// Only update base columns; the Roles association is managed by SetRoles.
 	return d.db().Model(&model.SysUser{ID: user.ID}).
-		Select("Nickname", "Email", "Phone", "Avatar", "Status", "Password").
+		Select("Nickname", "Email", "Phone", "Avatar", "Status", "Password", "TokenVersion").
 		Updates(user).Error
 }
 

@@ -59,12 +59,12 @@ func (s *AuthService) Login(req *LoginRequest, ip string) (*LoginResponse, error
 
 	cache.ClearLoginFail(req.Username, ip)
 
-	roleCode := "default"
-	if len(user.Roles) > 0 {
-		roleCode = user.Roles[0].Code
+	roleCodes := make([]string, 0, len(user.Roles))
+	for _, r := range user.Roles {
+		roleCodes = append(roleCodes, r.Code)
 	}
 
-	token, err := jwtpkg.GenerateToken(user.ID, user.Username, roleCode)
+	token, err := jwtpkg.GenerateToken(user.ID, user.Username, roleCodes, user.TokenVersion)
 	if err != nil {
 		return nil, errors.New("生成 Token 失败")
 	}

@@ -7,15 +7,17 @@ import (
 	"github.com/kar1hsu/frame/internal/pkg/cache"
 	jwtpkg "github.com/kar1hsu/frame/internal/pkg/jwt"
 	"github.com/kar1hsu/frame/internal/pkg/response"
+	"github.com/kar1hsu/frame/internal/repository"
 )
 
 const (
-	CtxUserIDKey   = "user_id"
-	CtxUsernameKey = "username"
-	CtxRoleCodeKey = "role_code"
+	CtxUserIDKey    = "user_id"
+	CtxUsernameKey  = "username"
+	CtxRoleCodesKey = "role_codes"
 )
 
 func AdminAuth() gin.HandlerFunc {
+	userRepo := repository.NewUserRepo()
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -41,9 +43,17 @@ func AdminAuth() gin.HandlerFunc {
 			return
 		}
 
+		// 会话撤销：比对 token 版本与用户当前版本
+		// 改密 / 禁用 / 改角色 / 删除用户后，旧 token 立即失效
+		version, err := userRepo.GetTokenVersion(claims.UserID)
+		if err != nil || version != claims.TokenVersion {
+			response.Unauthorized(c, "登录状态已失效，请重新登录")
+			return
+		}
+
 		c.Set(CtxUserIDKey, claims.UserID)
 		c.Set(CtxUsernameKey, claims.Username)
-		c.Set(CtxRoleCodeKey, claims.RoleCode)
+		c.Set(CtxRoleCodesKey, claims.RoleCodes)
 		c.Next()
 	}
 }
@@ -57,11 +67,11 @@ func GetUserID(c *gin.Context) uint {
 	return id
 }
 
-func GetRoleCode(c *gin.Context) string {
-	val, exists := c.Get(CtxRoleCodeKey)
+func GetRoleCodes(c *gin.Context) []string {
+	val, exists := c.Get(CtxRoleCodesKey)
 	if !exists {
-		return ""
+		return nil
 	}
-	code, _ := val.(string)
-	return code
+	codes, _ := val.([]string)
+	return codes
 }
