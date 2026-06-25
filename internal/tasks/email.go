@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/kar1hsu/frame/internal/app"
 )
 
 type EmailPayload struct {
@@ -19,6 +21,6 @@ func HandleEmailSend(ctx context.Context, payload []byte) error {
 	}
 
 	// TODO: replace with real email sending logic
-	fmt.Printf("[task] sending email to=%s subject=%s\n", p.To, p.Subject)
+	app.Log.Infof("[task] sending email to=%s subject=%s", p.To, p.Subject)
 	return nil
 }

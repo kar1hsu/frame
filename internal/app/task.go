@@ -11,6 +11,9 @@ func InitTask() {
 		RedisDB:       Cfg.Redis.DB,
 		Concurrency:   Cfg.Task.Concurrency,
 		Queues:        Cfg.Task.Queues,
+		ErrorHandler: func(taskType string, err error) {
+			Log.Errorw("task failed", "type", taskType, "err", err)
+		},
 	})
 	Log.Info("task manager initialized")
 }

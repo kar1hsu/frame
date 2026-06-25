@@ -47,6 +47,9 @@ type RoleAPIItem struct {
 }
 
 func (s *RoleService) Create(req *CreateRoleRequest) error {
+	if req.Code == model.SuperAdminRoleCode {
+		return errors.New("该角色编码为系统保留，不可使用")
+	}
 	if _, err := s.roleRepo.GetByCode(req.Code); err == nil {
 		return errors.New("角色编码已存在")
 	}
@@ -93,6 +96,10 @@ func (s *RoleService) Delete(id uint) error {
 	role, err := s.roleRepo.GetByID(id)
 	if err != nil {
 		return errors.New("角色不存在")
+	}
+
+	if role.Code == model.SuperAdminRoleCode {
+		return errors.New("系统内置超级管理员角色不可删除")
 	}
 
 	// Remove all casbin policies for this role

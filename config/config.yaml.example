@@ -1,6 +1,9 @@
 server:
   port: 8080
   mode: debug # debug | release | test
+  # 允许的跨域来源；留空或不配置则回退为 "*"。生产环境建议配置显式白名单：
+  # allow_origins:
+  #   - https://admin.example.com
 
 database:
   driver: mysql # mysql | postgres

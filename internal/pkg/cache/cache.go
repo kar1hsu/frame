@@ -78,24 +78,22 @@ func ClearAllPermissionCache() {
 const loginLimitMax = 5
 const loginLimitWindow = 15 * time.Minute
 
-func loginKey(username string) string {
-	return "login:fail:" + username
+func loginKey(username, ip string) string {
+	return "login:fail:" + username + ":" + ip
 }
 
-func IncrLoginFail(username string) (int64, error) {
-	k := loginKey(username)
+func IncrLoginFail(username, ip string) (int64, error) {
+	k := loginKey(username, ip)
 	count, err := store.Incr(k)
 	if err != nil {
 		return 0, err
 	}
-	if count == 1 {
-		store.Expire(k, loginLimitWindow)
-	}
+	store.Expire(k, loginLimitWindow)
 	return count, nil
 }
 
-func IsLoginLocked(username string) bool {
-	val, err := store.Get(loginKey(username))
+func IsLoginLocked(username, ip string) bool {
+	val, err := store.Get(loginKey(username, ip))
 	if err != nil {
 		return false
 	}
@@ -104,11 +102,11 @@ func IsLoginLocked(username string) bool {
 	return count >= loginLimitMax
 }
 
-func ClearLoginFail(username string) {
-	store.Del(loginKey(username))
+func ClearLoginFail(username, ip string) {
+	store.Del(loginKey(username, ip))
 }
 
-func GetLoginLockTTL(username string) time.Duration {
-	ttl, _ := store.TTL(loginKey(username))
+func GetLoginLockTTL(username, ip string) time.Duration {
+	ttl, _ := store.TTL(loginKey(username, ip))
 	return ttl
 }

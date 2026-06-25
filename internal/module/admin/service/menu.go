@@ -183,7 +183,7 @@ func (s *MenuService) GetUserPermissions(userID uint) ([]string, error) {
 
 	// Super admin has all permissions
 	for _, role := range user.Roles {
-		if role.Code == "admin" {
+		if role.Code == model.SuperAdminRoleCode {
 			return []string{"*"}, nil
 		}
 	}

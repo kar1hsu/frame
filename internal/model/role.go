@@ -1,5 +1,9 @@
 package model
 
+// SuperAdminRoleCode is the reserved role code whose holder bypasses all RBAC
+// It is created by the seeder and must not be reused or deleted.
+const SuperAdminRoleCode = "admin"
+
 type SysRole struct {
 	ID     uint      `json:"id" gorm:"primaryKey"`
 	Name   string    `json:"name" gorm:"size:64;not null"`

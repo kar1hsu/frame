@@ -32,16 +32,16 @@ type LoginResponse struct {
 	Nickname string `json:"nickname"`
 }
 
-func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
-	if cache.IsLoginLocked(req.Username) {
-		ttl := cache.GetLoginLockTTL(req.Username)
+func (s *AuthService) Login(req *LoginRequest, ip string) (*LoginResponse, error) {
+	if cache.IsLoginLocked(req.Username, ip) {
+		ttl := cache.GetLoginLockTTL(req.Username, ip)
 		minutes := int(ttl.Minutes()) + 1
 		return nil, fmt.Errorf("登录失败次数过多，请 %d 分钟后重试", minutes)
 	}
 
 	user, err := s.userRepo.GetByUsername(req.Username)
 	if err != nil {
-		cache.IncrLoginFail(req.Username)
+		cache.IncrLoginFail(req.Username, ip)
 		return nil, errors.New("用户名或密码错误")
 	}
 
@@ -50,7 +50,7 @@ func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
 	}
 
 	if !utils.CheckPassword(req.Password, user.Password) {
-		count, _ := cache.IncrLoginFail(req.Username)
+		count, _ := cache.IncrLoginFail(req.Username, ip)
 		remaining := int64(5) - count
 		if remaining > 0 {
 			return nil, fmt.Errorf("用户名或密码错误，还可尝试 %d 次", remaining)
@@ -58,7 +58,7 @@ func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
 		return nil, errors.New("登录失败次数过多，账户已被临时锁定")
 	}
 
-	cache.ClearLoginFail(req.Username)
+	cache.ClearLoginFail(req.Username, ip)
 
 	roleCode := "default"
 	if len(user.Roles) > 0 {

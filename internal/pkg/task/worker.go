@@ -17,12 +17,17 @@ type Worker struct {
 	handlers map[string]HandlerFunc
 }
 
-func NewWorker(redisAddr, password string, db int, concurrency int, queues map[string]int) *Worker {
+func NewWorker(redisAddr, password string, db int, concurrency int, queues map[string]int, errHandler func(taskType string, err error)) *Worker {
 	if concurrency <= 0 {
 		concurrency = 10
 	}
 	if len(queues) == 0 {
 		queues = map[string]int{"default": 1}
+	}
+	if errHandler == nil {
+		errHandler = func(taskType string, err error) {
+			fmt.Printf("[task error] type=%s err=%v\n", taskType, err)
+		}
 	}
 
 	srv := asynq.NewServer(
@@ -35,7 +40,7 @@ func NewWorker(redisAddr, password string, db int, concurrency int, queues map[s
 			Concurrency: concurrency,
 			Queues:      queues,
 			ErrorHandler: asynq.ErrorHandlerFunc(func(ctx context.Context, task *asynq.Task, err error) {
-				fmt.Printf("[task error] type=%s err=%v\n", task.Type(), err)
+				errHandler(task.Type(), err)
 			}),
 		},
 	)

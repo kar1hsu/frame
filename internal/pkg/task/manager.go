@@ -7,6 +7,9 @@ type ManagerConfig struct {
 	RedisDB       int
 	Concurrency   int
 	Queues        []string
+	// ErrorHandler is invoked when a task ultimately fails. If nil, errors are
+	// printed to stdout. Inject app.Log here to route failures into zap.
+	ErrorHandler func(taskType string, err error)
 }
 
 // Manager holds the task client, worker, and scheduler instances.
@@ -27,7 +30,7 @@ func NewManager(cfg ManagerConfig) *Manager {
 
 	return &Manager{
 		Client:    NewClient(cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB),
-		Worker:    NewWorker(cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB, cfg.Concurrency, queues),
+		Worker:    NewWorker(cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB, cfg.Concurrency, queues, cfg.ErrorHandler),
 		Scheduler: NewScheduler(cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB),
 	}
 }

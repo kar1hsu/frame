@@ -25,7 +25,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	res, err := h.svc.Login(&req)
+	res, err := h.svc.Login(&req, c.ClientIP())
 	if err != nil {
 		response.Fail(c, 20003, err.Error())
 		return

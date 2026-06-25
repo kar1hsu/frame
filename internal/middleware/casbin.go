@@ -3,6 +3,7 @@ package middleware
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/kar1hsu/frame/internal/app"
+	"github.com/kar1hsu/frame/internal/model"
 	"github.com/kar1hsu/frame/internal/pkg/response"
 )
 
@@ -15,7 +16,7 @@ func CasbinRBAC() gin.HandlerFunc {
 		}
 
 		// super admin bypasses all checks
-		if roleCode == "admin" {
+		if roleCode == model.SuperAdminRoleCode {
 			c.Next()
 			return
 		}
