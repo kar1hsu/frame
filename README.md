@@ -2,7 +2,7 @@
 
 English | [简体中文](README.zh-CN.md)
 
-A modular admin/back-office framework built on **Gin + GORM + Casbin + JWT**, with a **Vue 3 + Element Plus** admin panel embedded directly into the Go binary.
+Frame is a modular admin/back-office framework for Go. It pairs a **Gin + GORM + Casbin + JWT** backend with a **Vue 3 + Element Plus** panel compiled straight into the binary — a single `go build` ships the whole app. Out of the box: **button-level RBAC** with auto-generated Casbin policies, a **DB-backed operation/audit log**, **runtime system config** (DB as source of truth, Redis-cached, instant multi-instance updates), and an **Asynq distributed task queue** with cron.
 
 ## Tech Stack
 
@@ -97,10 +97,14 @@ Vite dev server runs at `http://localhost:5173` and proxies API calls to the bac
 ## Docker
 
 ```bash
-cp config/config.yaml deploy/config.yaml
 cd deploy
-docker-compose up -d
+cp .env.example .env          # set DB/Redis passwords and timezone
+docker compose up -d
 ```
+
+Notes:
+- `deploy/config.yaml` is already wired for the compose network (`host: mysql` / `host: redis`) and is mounted into the app containers — edit app settings there, **not** in the root `config/config.yaml`.
+- `.env` configures the MySQL/Redis containers. If you change `MYSQL_ROOT_PASSWORD` / `REDIS_PASSWORD`, set the matching `database.password` / `redis.password` in `deploy/config.yaml` too — the app reads credentials from the mounted config, not from those env vars.
 
 ## Project Structure
 
