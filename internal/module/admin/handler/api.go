@@ -24,7 +24,7 @@ func (h *APIHandler) Create(c *gin.Context) {
 		response.Fail(c, errcode.ErrParam, "参数错误: "+err.Error())
 		return
 	}
-	if err := h.svc.Create(&req); err != nil {
+	if err := h.svc.Create(c.Request.Context(), &req); err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
@@ -37,7 +37,7 @@ func (h *APIHandler) GetByID(c *gin.Context) {
 		response.Fail(c, errcode.ErrParam, "参数错误")
 		return
 	}
-	api, err := h.svc.GetByID(uint(id))
+	api, err := h.svc.GetByID(c.Request.Context(), uint(id))
 	if err != nil {
 		response.Fail(c, errcode.ErrNotFound, "API 不存在")
 		return
@@ -56,7 +56,7 @@ func (h *APIHandler) Update(c *gin.Context) {
 		response.Fail(c, errcode.ErrParam, "参数错误: "+err.Error())
 		return
 	}
-	if err := h.svc.Update(uint(id), &req); err != nil {
+	if err := h.svc.Update(c.Request.Context(), uint(id), &req); err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
@@ -69,7 +69,7 @@ func (h *APIHandler) Delete(c *gin.Context) {
 		response.Fail(c, errcode.ErrParam, "参数错误")
 		return
 	}
-	if err := h.svc.Delete(uint(id)); err != nil {
+	if err := h.svc.Delete(c.Request.Context(), uint(id)); err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
@@ -78,7 +78,7 @@ func (h *APIHandler) Delete(c *gin.Context) {
 
 func (h *APIHandler) List(c *gin.Context) {
 	p := utils.GetPagination(c)
-	apis, total, err := h.svc.List(p.Page, p.PageSize)
+	apis, total, err := h.svc.List(c.Request.Context(), p.Page, p.PageSize)
 	if err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return
@@ -92,7 +92,7 @@ func (h *APIHandler) List(c *gin.Context) {
 }
 
 func (h *APIHandler) ListAll(c *gin.Context) {
-	apis, err := h.svc.ListAll()
+	apis, err := h.svc.ListAll(c.Request.Context())
 	if err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return

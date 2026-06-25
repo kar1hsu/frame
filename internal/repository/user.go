@@ -1,80 +1,65 @@
 package repository
 
 import (
-	"github.com/kar1hsu/frame/internal/app"
+	"context"
+
 	"github.com/kar1hsu/frame/internal/model"
 	"gorm.io/gorm"
 )
 
-type UserRepo struct{}
+type UserRepo struct {
+	BaseRepo[model.SysUser]
+}
 
 func NewUserRepo() *UserRepo {
 	return &UserRepo{}
 }
 
-func (d *UserRepo) db() *gorm.DB {
-	return app.DB
+// GetByID overrides the generic version to preload Roles.
+func (d *UserRepo) GetByID(ctx context.Context, id uint) (*model.SysUser, error) {
+	return d.BaseRepo.GetByID(ctx, id, "Roles")
 }
 
-func (d *UserRepo) Create(user *model.SysUser) error {
-	return d.db().Create(user).Error
-}
-
-func (d *UserRepo) GetByID(id uint) (*model.SysUser, error) {
+func (d *UserRepo) GetByUsername(ctx context.Context, username string) (*model.SysUser, error) {
 	var user model.SysUser
-	if err := d.db().Preload("Roles").First(&user, id).Error; err != nil {
+	if err := dbFrom(ctx).Preload("Roles").Where("username = ?", username).First(&user).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
 }
 
-// GetTokenVersion returns the user's current token version, used by the auth
-// middleware for session revocation. Returns an error if the user is gone.
-func (d *UserRepo) GetTokenVersion(id uint) (int, error) {
+// GetTokenVersion returns the user's current token version (session revocation).
+func (d *UserRepo) GetTokenVersion(ctx context.Context, id uint) (int, error) {
 	var user model.SysUser
-	if err := d.db().Select("token_version").First(&user, id).Error; err != nil {
+	if err := dbFrom(ctx).Select("token_version").First(&user, id).Error; err != nil {
 		return 0, err
 	}
 	return user.TokenVersion, nil
 }
 
-func (d *UserRepo) GetByUsername(username string) (*model.SysUser, error) {
-	var user model.SysUser
-	if err := d.db().Preload("Roles").Where("username = ?", username).First(&user).Error; err != nil {
-		return nil, err
-	}
-	return &user, nil
+// Update writes only base columns; Roles is managed by SetRoles.
+func (d *UserRepo) Update(ctx context.Context, user *model.SysUser) error {
+	return d.BaseRepo.Update(ctx, user, "Nickname", "Email", "Phone", "Avatar", "Status", "Password", "TokenVersion")
 }
 
-func (d *UserRepo) Update(user *model.SysUser) error {
-	// Only update base columns; the Roles association is managed by SetRoles.
-	return d.db().Model(&model.SysUser{ID: user.ID}).
-		Select("Nickname", "Email", "Phone", "Avatar", "Status", "Password", "TokenVersion").
-		Updates(user).Error
+// Delete soft-deletes the user, clears its role associations (sys_user_role),
+// and mangles the username so the unique index is freed — letting the same
+// username be reused later. The soft-deleted row is kept for audit.
+func (d *UserRepo) Delete(ctx context.Context, id uint) error {
+	return Transaction(ctx, func(ctx context.Context) error {
+		if err := dbFrom(ctx).Model(&model.SysUser{}).Where("id = ?", id).
+			Update("username", gorm.Expr("CONCAT('del#', id, '#', LEFT(username, 40))")).Error; err != nil {
+			return err
+		}
+		return dbFrom(ctx).Select("Roles").Delete(&model.SysUser{ID: id}).Error
+	})
 }
 
-func (d *UserRepo) Delete(id uint) error {
-	return d.db().Delete(&model.SysUser{}, id).Error
-}
-
-func (d *UserRepo) List(page, pageSize int) ([]model.SysUser, int64, error) {
-	var users []model.SysUser
-	var total int64
-
-	db := d.db().Model(&model.SysUser{})
-	if err := db.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-	err := db.Preload("Roles").Offset((page - 1) * pageSize).Limit(pageSize).
-		Order("id DESC").Find(&users).Error
-	return users, total, err
-}
-
-func (d *UserRepo) SetRoles(userID uint, roleIDs []uint) error {
+func (d *UserRepo) SetRoles(ctx context.Context, userID uint, roleIDs []uint) error {
 	user := &model.SysUser{ID: userID}
 	var roles []model.SysRole
 	for _, id := range roleIDs {
 		roles = append(roles, model.SysRole{ID: id})
 	}
-	return d.db().Model(user).Association("Roles").Replace(roles)
+	return dbFrom(ctx).Model(user).Association("Roles").Replace(roles)
 }

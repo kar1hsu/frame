@@ -23,7 +23,7 @@
           </el-button>
         </el-form-item>
       </el-form>
-      <p class="login-hint">默认账号: admin / admin123</p>
+      <p v-if="isDev" class="login-hint">默认账号: admin / admin123</p>
     </div>
   </div>
 </template>
@@ -39,6 +39,7 @@ const router = useRouter()
 const userStore = useUserStore()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
+const isDev = import.meta.env.DEV
 
 const form = reactive({ username: '', password: '' })
 const rules = {

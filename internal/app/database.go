@@ -27,6 +27,8 @@ func InitDatabase() error {
 
 	gormConfig := &gorm.Config{
 		Logger: newGormLogger(gormLogLevel),
+		// 把驱动层错误翻译成 gorm 哨兵错误，便于 errors.Is(err, gorm.ErrDuplicatedKey) 等判断
+		TranslateError: true,
 	}
 
 	var dialector gorm.Dialector

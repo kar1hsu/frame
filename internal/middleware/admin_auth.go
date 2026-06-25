@@ -45,7 +45,7 @@ func AdminAuth() gin.HandlerFunc {
 
 		// 会话撤销：比对 token 版本与用户当前版本
 		// 改密 / 禁用 / 改角色 / 删除用户后，旧 token 立即失效
-		version, err := userRepo.GetTokenVersion(claims.UserID)
+		version, err := userRepo.GetTokenVersion(c.Request.Context(), claims.UserID)
 		if err != nil || version != claims.TokenVersion {
 			response.Unauthorized(c, "登录状态已失效，请重新登录")
 			return

@@ -1,11 +1,13 @@
 package service
 
 import (
+	"context"
 	"errors"
 
 	"github.com/kar1hsu/frame/internal/model"
 	"github.com/kar1hsu/frame/internal/pkg/utils"
 	"github.com/kar1hsu/frame/internal/repository"
+	"gorm.io/gorm"
 )
 
 type UserService struct {
@@ -36,10 +38,13 @@ type UpdateUserRequest struct {
 	RoleIDs  []uint `json:"role_ids"`
 }
 
-func (s *UserService) Create(req *CreateUserRequest) error {
-	_, err := s.userRepo.GetByUsername(req.Username)
+func (s *UserService) Create(ctx context.Context, req *CreateUserRequest) error {
+	_, err := s.userRepo.GetByUsername(ctx, req.Username)
 	if err == nil {
 		return errors.New("用户名已存在")
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err // 真实 DB 错误，不当作"可创建"
 	}
 
 	hashed, err := utils.HashPassword(req.Password)
@@ -61,22 +66,27 @@ func (s *UserService) Create(req *CreateUserRequest) error {
 		Status:   status,
 	}
 
-	if err := s.userRepo.Create(user); err != nil {
-		return err
-	}
-
-	if len(req.RoleIDs) > 0 {
-		return s.userRepo.SetRoles(user.ID, req.RoleIDs)
-	}
-	return nil
+	// 创建用户 + 分配角色 在同一事务内（中途失败整体回滚）
+	return repository.Transaction(ctx, func(ctx context.Context) error {
+		if err := s.userRepo.Create(ctx, user); err != nil {
+			if errors.Is(err, gorm.ErrDuplicatedKey) {
+				return errors.New("用户名已存在") // 唯一索引兜底（堵 TOCTOU 竞态）
+			}
+			return err
+		}
+		if len(req.RoleIDs) > 0 {
+			return s.userRepo.SetRoles(ctx, user.ID, req.RoleIDs)
+		}
+		return nil
+	})
 }
 
-func (s *UserService) GetByID(id uint) (*model.SysUser, error) {
-	return s.userRepo.GetByID(id)
+func (s *UserService) GetByID(ctx context.Context, id uint) (*model.SysUser, error) {
+	return s.userRepo.GetByID(ctx, id)
 }
 
-func (s *UserService) Update(id uint, req *UpdateUserRequest) error {
-	user, err := s.userRepo.GetByID(id)
+func (s *UserService) Update(ctx context.Context, id uint, req *UpdateUserRequest) error {
+	user, err := s.userRepo.GetByID(ctx, id)
 	if err != nil {
 		return notFoundOr(err, "用户不存在")
 	}
@@ -103,32 +113,47 @@ func (s *UserService) Update(id uint, req *UpdateUserRequest) error {
 		}
 		user.Password = hashed
 	}
-
 	// 改密 / 改状态 / 改角色都使该用户已签发的 token 失效（会话撤销）
 	if req.Password != "" || req.Status != nil || req.RoleIDs != nil {
 		user.TokenVersion++
 	}
 
-	if err := s.userRepo.Update(user); err != nil {
-		return err
+	return repository.Transaction(ctx, func(ctx context.Context) error {
+		if err := s.userRepo.Update(ctx, user); err != nil {
+			return err
+		}
+		if req.RoleIDs != nil {
+			return s.userRepo.SetRoles(ctx, id, req.RoleIDs)
+		}
+		return nil
+	})
+}
+
+func (s *UserService) Delete(ctx context.Context, id, currentUserID uint) error {
+	if id == currentUserID {
+		return errors.New("不能删除当前登录用户")
 	}
-
-	if req.RoleIDs != nil {
-		return s.userRepo.SetRoles(id, req.RoleIDs)
+	user, err := s.userRepo.GetByID(ctx, id)
+	if err != nil {
+		return notFoundOr(err, "用户不存在")
 	}
-	return nil
+	for _, r := range user.Roles {
+		if r.Code == model.SuperAdminRoleCode {
+			return errors.New("不能删除超级管理员")
+		}
+	}
+	return s.userRepo.Delete(ctx, id)
 }
 
-func (s *UserService) Delete(id uint) error {
-	return s.userRepo.Delete(id)
+func (s *UserService) List(ctx context.Context, page, pageSize int) ([]model.SysUser, int64, error) {
+	return s.userRepo.PageList(ctx, page, pageSize, &repository.QueryOptions{
+		Order:    []string{"id DESC"},
+		Preloads: []string{"Roles"},
+	})
 }
 
-func (s *UserService) List(page, pageSize int) ([]model.SysUser, int64, error) {
-	return s.userRepo.List(page, pageSize)
-}
-
-func (s *UserService) GetProfile(id uint) (*model.SysUser, error) {
-	user, err := s.userRepo.GetByID(id)
+func (s *UserService) GetProfile(ctx context.Context, id uint) (*model.SysUser, error) {
+	user, err := s.userRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, notFoundOr(err, "用户不存在")
 	}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/kar1hsu/frame/internal/app"
+	"github.com/kar1hsu/frame/internal/middleware"
 	"github.com/kar1hsu/frame/internal/module/admin/service"
 	"github.com/kar1hsu/frame/internal/pkg/errcode"
 	"github.com/kar1hsu/frame/internal/pkg/response"
@@ -26,7 +27,8 @@ func (h *UserHandler) Create(c *gin.Context) {
 		response.Fail(c, errcode.ErrParam, "参数错误: "+err.Error())
 		return
 	}
-	if err := h.svc.Create(&req); err != nil {
+
+	if err := h.svc.Create(c.Request.Context(), &req); err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
@@ -53,7 +55,7 @@ func (h *UserHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	user, err := h.svc.GetByID(uint(id))
+	user, err := h.svc.GetByID(c.Request.Context(), uint(id))
 	if err != nil {
 		response.Fail(c, errcode.ErrUserNotFound, "用户不存在")
 		return
@@ -74,7 +76,7 @@ func (h *UserHandler) Update(c *gin.Context) {
 		return
 	}
 
-	if err := h.svc.Update(uint(id), &req); err != nil {
+	if err := h.svc.Update(c.Request.Context(), uint(id), &req); err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
@@ -88,7 +90,7 @@ func (h *UserHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	if err := h.svc.Delete(uint(id)); err != nil {
+	if err := h.svc.Delete(c.Request.Context(), uint(id), middleware.GetUserID(c)); err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
@@ -97,7 +99,7 @@ func (h *UserHandler) Delete(c *gin.Context) {
 
 func (h *UserHandler) List(c *gin.Context) {
 	p := utils.GetPagination(c)
-	users, total, err := h.svc.List(p.Page, p.PageSize)
+	users, total, err := h.svc.List(c.Request.Context(), p.Page, p.PageSize)
 	if err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return

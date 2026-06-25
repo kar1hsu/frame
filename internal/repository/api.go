@@ -1,55 +1,29 @@
 package repository
 
 import (
-	"github.com/kar1hsu/frame/internal/app"
+	"context"
+
 	"github.com/kar1hsu/frame/internal/model"
-	"gorm.io/gorm"
 )
 
-type ApiRepo struct{}
+type ApiRepo struct {
+	BaseRepo[model.SysAPI]
+}
 
 func NewApiRepo() *ApiRepo {
 	return &ApiRepo{}
 }
 
-func (d *ApiRepo) db() *gorm.DB {
-	return app.DB
+// SysAPI has no associations, so Create/GetByID/Delete/PageList come from BaseRepo.
+
+func (d *ApiRepo) Update(ctx context.Context, api *model.SysAPI) error {
+	return dbFrom(ctx).Save(api).Error
 }
 
-func (d *ApiRepo) Create(api *model.SysAPI) error {
-	return d.db().Create(api).Error
-}
-
-func (d *ApiRepo) GetByID(id uint) (*model.SysAPI, error) {
-	var api model.SysAPI
-	if err := d.db().First(&api, id).Error; err != nil {
+func (d *ApiRepo) ListAll(ctx context.Context) ([]model.SysAPI, error) {
+	var apis []model.SysAPI
+	if err := dbFrom(ctx).Order("`group` ASC, id ASC").Find(&apis).Error; err != nil {
 		return nil, err
 	}
-	return &api, nil
-}
-
-func (d *ApiRepo) Update(api *model.SysAPI) error {
-	return d.db().Save(api).Error
-}
-
-func (d *ApiRepo) Delete(id uint) error {
-	return d.db().Delete(&model.SysAPI{}, id).Error
-}
-
-func (d *ApiRepo) ListAll() ([]model.SysAPI, error) {
-	var apis []model.SysAPI
-	err := d.db().Order("`group` ASC, id ASC").Find(&apis).Error
-	return apis, err
-}
-
-func (d *ApiRepo) List(page, pageSize int) ([]model.SysAPI, int64, error) {
-	var apis []model.SysAPI
-	var total int64
-	db := d.db().Model(&model.SysAPI{})
-	if err := db.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-	err := db.Offset((page - 1) * pageSize).Limit(pageSize).
-		Order("`group` ASC, id ASC").Find(&apis).Error
-	return apis, total, err
+	return apis, nil
 }

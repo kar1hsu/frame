@@ -26,7 +26,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	res, err := h.svc.Login(&req, c.ClientIP())
+	res, err := h.svc.Login(c.Request.Context(), &req, c.ClientIP())
 	if err != nil {
 		response.Fail(c, errcode.ErrPasswordWrong, err.Error())
 		return
@@ -39,7 +39,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	authHeader := c.GetHeader("Authorization")
 	parts := strings.SplitN(authHeader, " ", 2)
 	if len(parts) == 2 {
-		h.svc.Logout(parts[1])
+		h.svc.Logout(c.Request.Context(), parts[1])
 	}
 
 	userID := middleware.GetUserID(c)
@@ -51,7 +51,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 func (h *AuthHandler) GetProfile(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	userSvc := service.NewUserService()
-	user, err := userSvc.GetProfile(userID)
+	user, err := userSvc.GetProfile(c.Request.Context(), userID)
 	if err != nil {
 		response.Fail(c, errcode.ErrUserNotFound, err.Error())
 		return
@@ -69,7 +69,7 @@ func (h *AuthHandler) GetPermissions(c *gin.Context) {
 	}
 
 	menuSvc := service.NewMenuService()
-	perms, err := menuSvc.GetUserPermissions(userID)
+	perms, err := menuSvc.GetUserPermissions(c.Request.Context(), userID)
 	if err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return

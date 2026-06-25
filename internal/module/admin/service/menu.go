@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 
 	"github.com/kar1hsu/frame/internal/model"
@@ -47,7 +48,7 @@ type UpdateMenuRequest struct {
 	APIIDs     *[]uint `json:"api_ids"`
 }
 
-func (s *MenuService) Create(req *CreateMenuRequest) error {
+func (s *MenuService) Create(ctx context.Context, req *CreateMenuRequest) error {
 	menu := &model.SysMenu{
 		ParentID:   req.ParentID,
 		Name:       req.Name,
@@ -60,21 +61,23 @@ func (s *MenuService) Create(req *CreateMenuRequest) error {
 		Visible:    req.Visible,
 		Status:     req.Status,
 	}
-	if err := s.menuRepo.Create(menu); err != nil {
-		return err
-	}
-	if len(req.APIIDs) > 0 {
-		return s.menuRepo.SetAPIs(menu.ID, req.APIIDs)
-	}
-	return nil
+	return repository.Transaction(ctx, func(ctx context.Context) error {
+		if err := s.menuRepo.Create(ctx, menu); err != nil {
+			return err
+		}
+		if len(req.APIIDs) > 0 {
+			return s.menuRepo.SetAPIs(ctx, menu.ID, req.APIIDs)
+		}
+		return nil
+	})
 }
 
-func (s *MenuService) GetByID(id uint) (*model.SysMenu, error) {
-	return s.menuRepo.GetByID(id)
+func (s *MenuService) GetByID(ctx context.Context, id uint) (*model.SysMenu, error) {
+	return s.menuRepo.GetByID(ctx, id)
 }
 
-func (s *MenuService) Update(id uint, req *UpdateMenuRequest) error {
-	menu, err := s.menuRepo.GetByID(id)
+func (s *MenuService) Update(ctx context.Context, id uint, req *UpdateMenuRequest) error {
+	menu, err := s.menuRepo.GetByID(ctx, id)
 	if err != nil {
 		return notFoundOr(err, "菜单不存在")
 	}
@@ -102,44 +105,46 @@ func (s *MenuService) Update(id uint, req *UpdateMenuRequest) error {
 	menu.Visible = req.Visible
 	menu.Status = req.Status
 
-	if err := s.menuRepo.Update(menu); err != nil {
-		return err
-	}
-	if req.APIIDs != nil {
-		return s.menuRepo.SetAPIs(id, *req.APIIDs)
-	}
-	return nil
+	return repository.Transaction(ctx, func(ctx context.Context) error {
+		if err := s.menuRepo.Update(ctx, menu); err != nil {
+			return err
+		}
+		if req.APIIDs != nil {
+			return s.menuRepo.SetAPIs(ctx, id, *req.APIIDs)
+		}
+		return nil
+	})
 }
 
-func (s *MenuService) Delete(id uint) error {
-	has, err := s.menuRepo.HasChildren(id)
+func (s *MenuService) Delete(ctx context.Context, id uint) error {
+	has, err := s.menuRepo.HasChildren(ctx, id)
 	if err != nil {
 		return err
 	}
 	if has {
 		return errors.New("存在子菜单，无法删除")
 	}
-	return s.menuRepo.Delete(id)
+	return s.menuRepo.Delete(ctx, id)
 }
 
-func (s *MenuService) GetTree() ([]*model.SysMenu, error) {
-	menus, err := s.menuRepo.ListAll()
+func (s *MenuService) GetTree(ctx context.Context) ([]*model.SysMenu, error) {
+	menus, err := s.menuRepo.ListAll(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return repository.BuildMenuTree(menus, 0), nil
 }
 
-func (s *MenuService) GetUserMenuTree(userID uint) ([]*model.SysMenu, error) {
+func (s *MenuService) GetUserMenuTree(ctx context.Context, userID uint) ([]*model.SysMenu, error) {
 	userDAO := repository.NewUserRepo()
-	user, err := userDAO.GetByID(userID)
+	user, err := userDAO.GetByID(ctx, userID)
 	if err != nil {
 		return nil, notFoundOr(err, "用户不存在")
 	}
 
 	menuIDSet := make(map[uint]bool)
 	for _, role := range user.Roles {
-		menus, err := s.roleRepo.GetMenusByRoleID(role.ID)
+		menus, err := s.roleRepo.GetMenusByRoleID(ctx, role.ID)
 		if err != nil {
 			continue
 		}
@@ -157,7 +162,7 @@ func (s *MenuService) GetUserMenuTree(userID uint) ([]*model.SysMenu, error) {
 		ids = append(ids, id)
 	}
 
-	menus, err := s.menuRepo.GetByIDs(ids)
+	menus, err := s.menuRepo.GetByIDs(ctx, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -173,10 +178,10 @@ func (s *MenuService) GetUserMenuTree(userID uint) ([]*model.SysMenu, error) {
 	return repository.BuildMenuTree(visible, 0), nil
 }
 
-// GetUserPermissions returns all permission identifiers (including buttons) for a user
-func (s *MenuService) GetUserPermissions(userID uint) ([]string, error) {
+// GetUserPermissions returns all permission identifiers (including buttons) for a user.
+func (s *MenuService) GetUserPermissions(ctx context.Context, userID uint) ([]string, error) {
 	userDAO := repository.NewUserRepo()
-	user, err := userDAO.GetByID(userID)
+	user, err := userDAO.GetByID(ctx, userID)
 	if err != nil {
 		return nil, notFoundOr(err, "用户不存在")
 	}
@@ -190,7 +195,7 @@ func (s *MenuService) GetUserPermissions(userID uint) ([]string, error) {
 
 	menuIDSet := make(map[uint]bool)
 	for _, role := range user.Roles {
-		menus, err := s.roleRepo.GetMenusByRoleID(role.ID)
+		menus, err := s.roleRepo.GetMenusByRoleID(ctx, role.ID)
 		if err != nil {
 			continue
 		}
@@ -208,7 +213,7 @@ func (s *MenuService) GetUserPermissions(userID uint) ([]string, error) {
 		ids = append(ids, id)
 	}
 
-	menus, err := s.menuRepo.GetByIDs(ids)
+	menus, err := s.menuRepo.GetByIDs(ctx, ids)
 	if err != nil {
 		return nil, err
 	}

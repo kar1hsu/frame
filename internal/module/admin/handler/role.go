@@ -24,7 +24,7 @@ func (h *RoleHandler) Create(c *gin.Context) {
 		response.Fail(c, errcode.ErrParam, "参数错误: "+err.Error())
 		return
 	}
-	if err := h.svc.Create(&req); err != nil {
+	if err := h.svc.Create(c.Request.Context(), &req); err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
@@ -37,8 +37,7 @@ func (h *RoleHandler) GetByID(c *gin.Context) {
 		response.Fail(c, errcode.ErrParam, "参数错误")
 		return
 	}
-
-	role, err := h.svc.GetByID(uint(id))
+	role, err := h.svc.GetByID(c.Request.Context(), uint(id))
 	if err != nil {
 		response.Fail(c, errcode.ErrRoleNotFound, "角色不存在")
 		return
@@ -52,14 +51,12 @@ func (h *RoleHandler) Update(c *gin.Context) {
 		response.Fail(c, errcode.ErrParam, "参数错误")
 		return
 	}
-
 	var req service.UpdateRoleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail(c, errcode.ErrParam, "参数错误: "+err.Error())
 		return
 	}
-
-	if err := h.svc.Update(uint(id), &req); err != nil {
+	if err := h.svc.Update(c.Request.Context(), uint(id), &req); err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
@@ -72,8 +69,7 @@ func (h *RoleHandler) Delete(c *gin.Context) {
 		response.Fail(c, errcode.ErrParam, "参数错误")
 		return
 	}
-
-	if err := h.svc.Delete(uint(id)); err != nil {
+	if err := h.svc.Delete(c.Request.Context(), uint(id)); err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
@@ -82,7 +78,7 @@ func (h *RoleHandler) Delete(c *gin.Context) {
 
 func (h *RoleHandler) List(c *gin.Context) {
 	p := utils.GetPagination(c)
-	roles, total, err := h.svc.List(p.Page, p.PageSize)
+	roles, total, err := h.svc.List(c.Request.Context(), p.Page, p.PageSize)
 	if err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return
@@ -96,7 +92,7 @@ func (h *RoleHandler) List(c *gin.Context) {
 }
 
 func (h *RoleHandler) ListAll(c *gin.Context) {
-	roles, err := h.svc.ListAll()
+	roles, err := h.svc.ListAll(c.Request.Context())
 	if err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return
@@ -110,14 +106,12 @@ func (h *RoleHandler) SetMenus(c *gin.Context) {
 		response.Fail(c, errcode.ErrParam, "参数错误")
 		return
 	}
-
 	var req service.SetRoleMenusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail(c, errcode.ErrParam, "参数错误: "+err.Error())
 		return
 	}
-
-	if err := h.svc.SetMenus(uint(id), req.MenuIDs); err != nil {
+	if err := h.svc.SetMenus(c.Request.Context(), uint(id), req.MenuIDs); err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
@@ -130,14 +124,12 @@ func (h *RoleHandler) SetAPIs(c *gin.Context) {
 		response.Fail(c, errcode.ErrParam, "参数错误")
 		return
 	}
-
 	var req service.SetRoleAPIsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail(c, errcode.ErrParam, "参数错误: "+err.Error())
 		return
 	}
-
-	if err := h.svc.SetAPIs(uint(id), req.APIs); err != nil {
+	if err := h.svc.SetAPIs(c.Request.Context(), uint(id), req.APIs); err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
@@ -150,8 +142,7 @@ func (h *RoleHandler) GetAPIs(c *gin.Context) {
 		response.Fail(c, errcode.ErrParam, "参数错误")
 		return
 	}
-
-	apis, err := h.svc.GetAPIs(uint(id))
+	apis, err := h.svc.GetAPIs(c.Request.Context(), uint(id))
 	if err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return

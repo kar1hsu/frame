@@ -90,8 +90,8 @@ onMounted(async () => {
         await userStore.fetchPermissions()
       }
     } catch {
-      userStore.logout()
-      router.push('/login')
+      // 401 已由 request 拦截器统一清登录态并跳转；
+      // 其他错误（网络抖动 / 5xx）不强制登出，避免把用户误踢下线
     }
   }
 })

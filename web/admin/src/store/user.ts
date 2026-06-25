@@ -2,10 +2,29 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { login as loginApi, logout as logoutApi, getProfile, getUserMenuTree, getUserPermissions } from '@/api/auth'
 
+export interface UserInfo {
+  id: number
+  username: string
+  nickname: string
+  avatar: string
+  email: string
+  phone: string
+}
+
+export interface MenuNode {
+  id: number
+  name: string
+  path: string
+  component: string
+  icon: string
+  permission: string
+  children?: MenuNode[]
+}
+
 export const useUserStore = defineStore('user', () => {
   const token = ref(localStorage.getItem('token') || '')
-  const userInfo = ref<any>(null)
-  const menuTree = ref<any[]>([])
+  const userInfo = ref<UserInfo | null>(null)
+  const menuTree = ref<MenuNode[]>([])
   const permissions = ref<string[]>([])
 
   async function login(username: string, password: string) {
@@ -38,10 +57,8 @@ export const useUserStore = defineStore('user', () => {
     return permissions.value.includes(perm)
   }
 
-  async function logout() {
-    try {
-      if (token.value) await logoutApi()
-    } catch { /* ignore */ }
+  // clearAuth 只清前端登录态（不调登出接口），供 401 拦截器复用，避免递归。
+  function clearAuth() {
     token.value = ''
     userInfo.value = null
     menuTree.value = []
@@ -49,5 +66,12 @@ export const useUserStore = defineStore('user', () => {
     localStorage.removeItem('token')
   }
 
-  return { token, userInfo, menuTree, permissions, login, fetchProfile, fetchMenus, fetchPermissions, hasPermission, logout }
+  async function logout() {
+    try {
+      if (token.value) await logoutApi()
+    } catch { /* ignore */ }
+    clearAuth()
+  }
+
+  return { token, userInfo, menuTree, permissions, login, fetchProfile, fetchMenus, fetchPermissions, hasPermission, clearAuth, logout }
 })

@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/kar1hsu/frame/internal/model"
 	"github.com/kar1hsu/frame/internal/repository"
 )
@@ -27,22 +29,22 @@ type UpdateAPIRequest struct {
 	Description string `json:"description"`
 }
 
-func (s *APIService) Create(req *CreateAPIRequest) error {
+func (s *APIService) Create(ctx context.Context, req *CreateAPIRequest) error {
 	api := &model.SysAPI{
 		Path:        req.Path,
 		Method:      req.Method,
 		Group:       req.Group,
 		Description: req.Description,
 	}
-	return s.apiRepo.Create(api)
+	return s.apiRepo.Create(ctx, api)
 }
 
-func (s *APIService) GetByID(id uint) (*model.SysAPI, error) {
-	return s.apiRepo.GetByID(id)
+func (s *APIService) GetByID(ctx context.Context, id uint) (*model.SysAPI, error) {
+	return s.apiRepo.GetByID(ctx, id)
 }
 
-func (s *APIService) Update(id uint, req *UpdateAPIRequest) error {
-	api, err := s.apiRepo.GetByID(id)
+func (s *APIService) Update(ctx context.Context, id uint, req *UpdateAPIRequest) error {
+	api, err := s.apiRepo.GetByID(ctx, id)
 	if err != nil {
 		return notFoundOr(err, "API 不存在")
 	}
@@ -58,17 +60,19 @@ func (s *APIService) Update(id uint, req *UpdateAPIRequest) error {
 	if req.Description != "" {
 		api.Description = req.Description
 	}
-	return s.apiRepo.Update(api)
+	return s.apiRepo.Update(ctx, api)
 }
 
-func (s *APIService) Delete(id uint) error {
-	return s.apiRepo.Delete(id)
+func (s *APIService) Delete(ctx context.Context, id uint) error {
+	return s.apiRepo.Delete(ctx, id)
 }
 
-func (s *APIService) List(page, pageSize int) ([]model.SysAPI, int64, error) {
-	return s.apiRepo.List(page, pageSize)
+func (s *APIService) List(ctx context.Context, page, pageSize int) ([]model.SysAPI, int64, error) {
+	return s.apiRepo.PageList(ctx, page, pageSize, &repository.QueryOptions{
+		Order: []string{"`group` ASC", "id ASC"},
+	})
 }
 
-func (s *APIService) ListAll() ([]model.SysAPI, error) {
-	return s.apiRepo.ListAll()
+func (s *APIService) ListAll(ctx context.Context) ([]model.SysAPI, error) {
+	return s.apiRepo.ListAll(ctx)
 }

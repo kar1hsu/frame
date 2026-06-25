@@ -1,69 +1,65 @@
 package repository
 
 import (
-	"github.com/kar1hsu/frame/internal/app"
+	"context"
+
 	"github.com/kar1hsu/frame/internal/model"
-	"gorm.io/gorm"
 )
 
-type MenuRepo struct{}
+type MenuRepo struct {
+	BaseRepo[model.SysMenu]
+}
 
 func NewMenuRepo() *MenuRepo {
 	return &MenuRepo{}
 }
 
-func (d *MenuRepo) db() *gorm.DB {
-	return app.DB
+// GetByID overrides the generic version to preload APIs.
+func (d *MenuRepo) GetByID(ctx context.Context, id uint) (*model.SysMenu, error) {
+	return d.BaseRepo.GetByID(ctx, id, "APIs")
 }
 
-func (d *MenuRepo) Create(menu *model.SysMenu) error {
-	return d.db().Create(menu).Error
+// Update writes only base columns; APIs is managed by SetAPIs.
+func (d *MenuRepo) Update(ctx context.Context, menu *model.SysMenu) error {
+	return d.BaseRepo.Update(ctx, menu, "ParentID", "Name", "Path", "Component", "Icon", "Sort", "Type", "Permission", "Visible", "Status")
 }
 
-func (d *MenuRepo) GetByID(id uint) (*model.SysMenu, error) {
-	var menu model.SysMenu
-	if err := d.db().Preload("APIs").First(&menu, id).Error; err != nil {
+// Delete removes the menu and its API associations (sys_menu_api).
+func (d *MenuRepo) Delete(ctx context.Context, id uint) error {
+	return dbFrom(ctx).Select("APIs").Delete(&model.SysMenu{ID: id}).Error
+}
+
+func (d *MenuRepo) ListAll(ctx context.Context) ([]model.SysMenu, error) {
+	var menus []model.SysMenu
+	if err := dbFrom(ctx).Order("sort ASC, id ASC").Find(&menus).Error; err != nil {
 		return nil, err
 	}
-	return &menu, nil
+	return menus, nil
 }
 
-func (d *MenuRepo) Update(menu *model.SysMenu) error {
-	// Only update base columns; the APIs association is managed by SetAPIs.
-	return d.db().Model(&model.SysMenu{ID: menu.ID}).
-		Select("ParentID", "Name", "Path", "Component", "Icon", "Sort", "Type", "Permission", "Visible", "Status").
-		Updates(menu).Error
-}
-
-func (d *MenuRepo) Delete(id uint) error {
-	return d.db().Delete(&model.SysMenu{}, id).Error
-}
-
-func (d *MenuRepo) ListAll() ([]model.SysMenu, error) {
+func (d *MenuRepo) GetByIDs(ctx context.Context, ids []uint) ([]model.SysMenu, error) {
 	var menus []model.SysMenu
-	err := d.db().Order("sort ASC, id ASC").Find(&menus).Error
-	return menus, err
+	if err := dbFrom(ctx).Preload("APIs").Where("id IN ?", ids).Order("sort ASC, id ASC").Find(&menus).Error; err != nil {
+		return nil, err
+	}
+	return menus, nil
 }
 
-func (d *MenuRepo) GetByIDs(ids []uint) ([]model.SysMenu, error) {
-	var menus []model.SysMenu
-	err := d.db().Preload("APIs").Where("id IN ?", ids).Order("sort ASC, id ASC").Find(&menus).Error
-	return menus, err
-}
-
-func (d *MenuRepo) SetAPIs(menuID uint, apiIDs []uint) error {
+func (d *MenuRepo) SetAPIs(ctx context.Context, menuID uint, apiIDs []uint) error {
 	menu := &model.SysMenu{ID: menuID}
 	var apis []model.SysAPI
 	for _, id := range apiIDs {
 		apis = append(apis, model.SysAPI{ID: id})
 	}
-	return d.db().Model(menu).Association("APIs").Replace(apis)
+	return dbFrom(ctx).Model(menu).Association("APIs").Replace(apis)
 }
 
-func (d *MenuRepo) HasChildren(id uint) (bool, error) {
+func (d *MenuRepo) HasChildren(ctx context.Context, id uint) (bool, error) {
 	var count int64
-	err := d.db().Model(&model.SysMenu{}).Where("parent_id = ?", id).Count(&count).Error
-	return count > 0, err
+	if err := dbFrom(ctx).Model(&model.SysMenu{}).Where("parent_id = ?", id).Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 func BuildMenuTree(menus []model.SysMenu, parentID uint) []*model.SysMenu {

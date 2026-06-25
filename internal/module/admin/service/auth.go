@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -31,14 +32,14 @@ type LoginResponse struct {
 	Nickname string `json:"nickname"`
 }
 
-func (s *AuthService) Login(req *LoginRequest, ip string) (*LoginResponse, error) {
+func (s *AuthService) Login(ctx context.Context, req *LoginRequest, ip string) (*LoginResponse, error) {
 	if cache.IsLoginLocked(req.Username, ip) {
 		ttl := cache.GetLoginLockTTL(req.Username, ip)
 		minutes := int(ttl.Minutes()) + 1
 		return nil, fmt.Errorf("登录失败次数过多，请 %d 分钟后重试", minutes)
 	}
 
-	user, err := s.userRepo.GetByUsername(req.Username)
+	user, err := s.userRepo.GetByUsername(ctx, req.Username)
 	if err != nil {
 		cache.IncrLoginFail(req.Username, ip)
 		return nil, errors.New("用户名或密码错误")
@@ -77,14 +78,14 @@ func (s *AuthService) Login(req *LoginRequest, ip string) (*LoginResponse, error
 	}, nil
 }
 
-func (s *AuthService) Logout(token string) error {
+func (s *AuthService) Logout(ctx context.Context, token string) error {
 	claims, err := jwtpkg.ParseToken(token)
 	if err != nil {
 		return nil // 无效/已过期的 token 无需拉黑
 	}
 	ttl := time.Until(claims.ExpiresAt.Time)
 	if ttl <= 0 {
-		return nil // 已过期，拉黑无意义
+		return nil
 	}
 	// 只按 token 的剩余寿命拉黑，避免黑名单条目长期占用 Redis
 	return cache.BlacklistToken(token, ttl)

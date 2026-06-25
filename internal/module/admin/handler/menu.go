@@ -31,7 +31,7 @@ func (h *MenuHandler) Create(c *gin.Context) {
 		req.Visible = 1
 	}
 
-	if err := h.svc.Create(&req); err != nil {
+	if err := h.svc.Create(c.Request.Context(), &req); err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
@@ -45,7 +45,7 @@ func (h *MenuHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	menu, err := h.svc.GetByID(uint(id))
+	menu, err := h.svc.GetByID(c.Request.Context(), uint(id))
 	if err != nil {
 		response.Fail(c, errcode.ErrMenuNotFound, "菜单不存在")
 		return
@@ -66,7 +66,7 @@ func (h *MenuHandler) Update(c *gin.Context) {
 		return
 	}
 
-	if err := h.svc.Update(uint(id), &req); err != nil {
+	if err := h.svc.Update(c.Request.Context(), uint(id), &req); err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
@@ -80,7 +80,7 @@ func (h *MenuHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	if err := h.svc.Delete(uint(id)); err != nil {
+	if err := h.svc.Delete(c.Request.Context(), uint(id)); err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return
 	}
@@ -88,7 +88,7 @@ func (h *MenuHandler) Delete(c *gin.Context) {
 }
 
 func (h *MenuHandler) GetTree(c *gin.Context) {
-	tree, err := h.svc.GetTree()
+	tree, err := h.svc.GetTree(c.Request.Context())
 	if err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return
@@ -98,7 +98,7 @@ func (h *MenuHandler) GetTree(c *gin.Context) {
 
 func (h *MenuHandler) GetUserMenuTree(c *gin.Context) {
 	userID := middleware.GetUserID(c)
-	tree, err := h.svc.GetUserMenuTree(userID)
+	tree, err := h.svc.GetUserMenuTree(c.Request.Context(), userID)
 	if err != nil {
 		response.Fail(c, errcode.ErrServer, err.Error())
 		return
