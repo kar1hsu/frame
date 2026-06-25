@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"gorm.io/driver/mysql"
@@ -27,15 +26,7 @@ func InitDatabase() error {
 	}
 
 	gormConfig := &gorm.Config{
-		Logger: logger.New(
-			log.Default(),
-			logger.Config{
-				SlowThreshold:             200 * time.Millisecond,
-				LogLevel:                  gormLogLevel,
-				IgnoreRecordNotFoundError: true,
-				Colorful:                  true,
-			},
-		),
+		Logger: newGormLogger(gormLogLevel),
 	}
 
 	var dialector gorm.Dialector
