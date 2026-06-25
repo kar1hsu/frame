@@ -37,7 +37,11 @@ func (d *RoleRepo) GetByCode(code string) (*model.SysRole, error) {
 }
 
 func (d *RoleRepo) Update(role *model.SysRole) error {
-	return d.db().Save(role).Error
+	// Only update base columns; never touch the Menus association implicitly
+	// (it is managed separately by SetMenus).
+	return d.db().Model(&model.SysRole{ID: role.ID}).
+		Select("Name", "Sort", "Status", "Remark").
+		Updates(role).Error
 }
 
 func (d *RoleRepo) Delete(id uint) error {

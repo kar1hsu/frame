@@ -37,7 +37,10 @@ func (d *UserRepo) GetByUsername(username string) (*model.SysUser, error) {
 }
 
 func (d *UserRepo) Update(user *model.SysUser) error {
-	return d.db().Save(user).Error
+	// Only update base columns; the Roles association is managed by SetRoles.
+	return d.db().Model(&model.SysUser{ID: user.ID}).
+		Select("Nickname", "Email", "Phone", "Avatar", "Status", "Password").
+		Updates(user).Error
 }
 
 func (d *UserRepo) Delete(id uint) error {

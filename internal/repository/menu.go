@@ -29,7 +29,10 @@ func (d *MenuRepo) GetByID(id uint) (*model.SysMenu, error) {
 }
 
 func (d *MenuRepo) Update(menu *model.SysMenu) error {
-	return d.db().Save(menu).Error
+	// Only update base columns; the APIs association is managed by SetAPIs.
+	return d.db().Model(&model.SysMenu{ID: menu.ID}).
+		Select("ParentID", "Name", "Path", "Component", "Icon", "Sort", "Type", "Permission", "Visible", "Status").
+		Updates(menu).Error
 }
 
 func (d *MenuRepo) Delete(id uint) error {
