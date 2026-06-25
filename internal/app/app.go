@@ -10,6 +10,10 @@ func Init(cfgFile string) error {
 	InitLogger()
 	Log.Info("config loaded successfully")
 
+	if Cfg.JWT.Secret == defaultJWTSecret {
+		Log.Warn("jwt.secret 仍为默认值，部署生产前请务必修改")
+	}
+
 	if err := InitDatabase(); err != nil {
 		return fmt.Errorf("init database: %w", err)
 	}
@@ -28,4 +32,23 @@ func Init(cfgFile string) error {
 	InitTask()
 
 	return nil
+}
+
+// Close releases all global resources in reverse order of initialization.
+// Safe to call on partially-initialized state (each handle is nil-checked).
+func Close() {
+	if TaskMgr != nil {
+		TaskMgr.Close()
+	}
+	if Redis != nil {
+		_ = Redis.Close()
+	}
+	if DB != nil {
+		if sqlDB, err := DB.DB(); err == nil {
+			_ = sqlDB.Close()
+		}
+	}
+	if Log != nil {
+		_ = Log.Sync()
+	}
 }

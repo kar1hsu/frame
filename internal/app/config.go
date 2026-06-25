@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -88,6 +89,10 @@ type LogConfig struct {
 
 var Cfg Config
 
+// defaultJWTSecret is the placeholder secret shipped in config.yaml.example.
+// It must never be used in production.
+const defaultJWTSecret = "frame-jwt-secret-key-change-in-production"
+
 func InitConfig(cfgFile string) error {
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
@@ -98,6 +103,11 @@ func InitConfig(cfgFile string) error {
 		viper.AddConfigPath(".")
 	}
 
+	setConfigDefaults()
+
+	// Allow nested keys to be overridden via env, e.g. FRAME_DATABASE_PASSWORD.
+	viper.SetEnvPrefix("FRAME")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
@@ -105,6 +115,41 @@ func InitConfig(cfgFile string) error {
 	}
 	if err := viper.Unmarshal(&Cfg); err != nil {
 		return fmt.Errorf("unmarshal config failed: %w", err)
+	}
+	if err := validateConfig(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func setConfigDefaults() {
+	viper.SetDefault("server.port", 8080)
+	viper.SetDefault("server.mode", "debug")
+	viper.SetDefault("database.max_idle_conns", 10)
+	viper.SetDefault("database.max_open_conns", 100)
+	viper.SetDefault("jwt.expire", 7200)
+	viper.SetDefault("task.concurrency", 10)
+}
+
+// validateConfig fails fast on missing required fields and rejects weak or
+// default JWT secrets when running in release mode.
+func validateConfig() error {
+	if Cfg.Database.Driver == "" {
+		return fmt.Errorf("database.driver is required")
+	}
+	if Cfg.Database.DBName == "" {
+		return fmt.Errorf("database.dbname is required")
+	}
+	if Cfg.JWT.Secret == "" {
+		return fmt.Errorf("jwt.secret is required")
+	}
+	if Cfg.Server.Mode == "release" {
+		if Cfg.JWT.Secret == defaultJWTSecret {
+			return fmt.Errorf("jwt.secret must be changed from the default value in release mode")
+		}
+		if len(Cfg.JWT.Secret) < 32 {
+			return fmt.Errorf("jwt.secret must be at least 32 bytes in release mode")
+		}
 	}
 	return nil
 }

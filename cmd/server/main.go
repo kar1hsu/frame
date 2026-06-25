@@ -1,8 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	frame "github.com/kar1hsu/frame"
 	"github.com/kar1hsu/frame/internal/app"
@@ -35,9 +41,26 @@ func main() {
 	)
 
 	addr := fmt.Sprintf(":%d", app.Cfg.Server.Port)
-	app.Log.Infof("server starting at %s", addr)
+	srv := &http.Server{Addr: addr, Handler: router}
 
-	if err := router.Run(addr); err != nil {
-		panic(fmt.Sprintf("server run failed: %v", err))
+	go func() {
+		app.Log.Infof("server starting at %s", addr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			app.Log.Fatalf("server run failed: %v", err)
+		}
+	}()
+
+	// Graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	app.Log.Info("shutting down server...")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		app.Log.Errorf("server forced to shutdown: %v", err)
 	}
+	app.Close()
+	app.Log.Info("server stopped")
 }

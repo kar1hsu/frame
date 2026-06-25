@@ -53,6 +53,6 @@ func main() {
 	app.Log.Info("shutting down worker...")
 	mgr.Scheduler.Stop()
 	mgr.Worker.Stop()
-	mgr.Close()
+	app.Close()
 	app.Log.Info("worker stopped")
 }

@@ -76,6 +76,7 @@ func SeedData() error {
 	if err := DB.Create(adminUser).Error; err != nil {
 		return err
 	}
+	Log.Warn("已创建默认管理员 admin/admin123，请登录后立即修改密码")
 
 	// Seed menus with API associations
 	// API IDs: 1=用户列表 2=创建用户 3=用户详情 4=更新用户 5=删除用户
