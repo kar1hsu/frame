@@ -12,6 +12,10 @@ export function createConfig(data: any) {
   return request.post('/admin/configs', data)
 }
 
+export function updateConfig(id: number, data: any) {
+  return request.put(`/admin/configs/${id}`, data)
+}
+
 export function deleteConfig(id: number) {
   return request.delete(`/admin/configs/${id}`)
 }

@@ -86,6 +86,7 @@ func (m *Module) RegisterRoutes(rg *gin.RouterGroup) {
 		auth.GET("/configs", configHandler.List)
 		auth.POST("/configs", configHandler.Create)
 		auth.PUT("/configs", configHandler.BatchUpdate)
+		auth.PUT("/configs/:id", configHandler.Update)
 		auth.DELETE("/configs/:id", configHandler.Delete)
 		auth.POST("/configs/refresh", configHandler.Refresh)
 	}

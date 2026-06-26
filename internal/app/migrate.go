@@ -128,6 +128,7 @@ func defaultAPIs() []model.SysAPI {
 		{ID: 26, Path: "/admin/configs", Method: "PUT", Group: "系统配置", Description: "保存配置"},
 		{ID: 27, Path: "/admin/configs/:id", Method: "DELETE", Group: "系统配置", Description: "删除配置"},
 		{ID: 28, Path: "/admin/configs/refresh", Method: "POST", Group: "系统配置", Description: "刷新配置缓存"},
+		{ID: 29, Path: "/admin/configs/:id", Method: "PUT", Group: "系统配置", Description: "编辑配置"},
 	}
 }
 
@@ -178,7 +179,7 @@ func defaultMenus(a []model.SysAPI) []model.SysMenu {
 		{ID: 7, ParentID: 1, Name: "系统配置", Path: "/system/config", Component: "system/config/index", Icon: "Tools", Sort: 9, Type: 1, Permission: "system:config:list", Visible: 1, Status: 1,
 			APIs: []model.SysAPI{a[23]}},
 		{ID: 70, ParentID: 7, Name: "保存配置", Sort: 1, Type: 2, Permission: "system:config:edit", Visible: 1, Status: 1,
-			APIs: []model.SysAPI{a[25], a[27]}},
+			APIs: []model.SysAPI{a[25], a[27], a[28]}},
 		{ID: 71, ParentID: 7, Name: "新增配置", Sort: 2, Type: 2, Permission: "system:config:add", Visible: 1, Status: 1,
 			APIs: []model.SysAPI{a[24]}},
 		{ID: 72, ParentID: 7, Name: "删除配置", Sort: 3, Type: 2, Permission: "system:config:delete", Visible: 1, Status: 1,

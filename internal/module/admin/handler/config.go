@@ -56,6 +56,24 @@ func (h *ConfigHandler) BatchUpdate(c *gin.Context) {
 	response.OK(c, nil)
 }
 
+func (h *ConfigHandler) Update(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		response.Fail(c, errcode.ErrParam, "参数错误")
+		return
+	}
+	var req service.UpdateConfigRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, errcode.ErrParam, "参数错误: "+err.Error())
+		return
+	}
+	if err := h.svc.Update(c.Request.Context(), uint(id), &req); err != nil {
+		response.Fail(c, errcode.ErrServer, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
 func (h *ConfigHandler) Delete(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {

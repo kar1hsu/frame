@@ -2,7 +2,10 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/kar1hsu/frame/internal/model"
 	"github.com/kar1hsu/frame/internal/pkg/setting"
@@ -15,6 +18,32 @@ type ConfigService struct {
 
 func NewConfigService() *ConfigService {
 	return &ConfigService{repo: repository.NewConfigRepo()}
+}
+
+var allowedConfigTypes = map[string]bool{
+	"string": true, "int": true, "float": true,
+	"bool": true, "text": true, "json": true, "select": true,
+}
+
+// validateConfigDef ensures the type is known and, for select, that options is a
+// non-empty JSON array — so bad definitions can't reach the DB/UI.
+func validateConfigDef(typ, options string) error {
+	if !allowedConfigTypes[typ] {
+		return fmt.Errorf("不支持的配置类型: %s", typ)
+	}
+	if typ == "select" {
+		if strings.TrimSpace(options) == "" {
+			return errors.New("select 类型必须提供选项(options)")
+		}
+		var arr []json.RawMessage
+		if err := json.Unmarshal([]byte(options), &arr); err != nil {
+			return errors.New("options 必须是 JSON 数组")
+		}
+		if len(arr) == 0 {
+			return errors.New("select 选项不能为空")
+		}
+	}
+	return nil
 }
 
 func (s *ConfigService) List(ctx context.Context, group string) ([]model.SysConfig, error) {
@@ -30,8 +59,7 @@ type ConfigItem struct {
 	Value string `json:"value"`
 }
 
-// BatchUpdate writes many values in one transaction, then re-syncs the whole
-// cache from DB (so all instances converge on next read).
+// BatchUpdate writes many values in one transaction, then re-syncs the cache.
 func (s *ConfigService) BatchUpdate(ctx context.Context, items []ConfigItem) error {
 	if len(items) == 0 {
 		return nil
@@ -62,6 +90,13 @@ type CreateConfigRequest struct {
 }
 
 func (s *ConfigService) Create(ctx context.Context, req *CreateConfigRequest) error {
+	typ := req.Type
+	if typ == "" {
+		typ = "string"
+	}
+	if err := validateConfigDef(typ, req.Options); err != nil {
+		return err
+	}
 	exists, err := s.repo.Exists(ctx, &repository.QueryOptions{
 		Where: map[string]interface{}{"key": req.Key},
 	})
@@ -70,10 +105,6 @@ func (s *ConfigService) Create(ctx context.Context, req *CreateConfigRequest) er
 	}
 	if exists {
 		return errors.New("配置键已存在")
-	}
-	typ := req.Type
-	if typ == "" {
-		typ = "string"
 	}
 	c := &model.SysConfig{
 		Group: req.Group, Key: req.Key, Name: req.Name, Value: req.Value,
@@ -84,6 +115,46 @@ func (s *ConfigService) Create(ctx context.Context, req *CreateConfigRequest) er
 		return err
 	}
 	_ = setting.RefreshKey(context.Background(), req.Key)
+	return nil
+}
+
+type UpdateConfigRequest struct {
+	Group    string `json:"group"`
+	Name     string `json:"name" binding:"required"`
+	Value    string `json:"value"`
+	Type     string `json:"type"`
+	Options  string `json:"options"`
+	IsPublic bool   `json:"is_public"`
+	Remark   string `json:"remark"`
+	Sort     int    `json:"sort"`
+}
+
+// Update edits a config's metadata and value (the key is immutable), then
+// refreshes the cache for that key.
+func (s *ConfigService) Update(ctx context.Context, id uint, req *UpdateConfigRequest) error {
+	c, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return notFoundOr(err, "配置不存在")
+	}
+	typ := req.Type
+	if typ == "" {
+		typ = "string"
+	}
+	if err := validateConfigDef(typ, req.Options); err != nil {
+		return err
+	}
+	c.Group = req.Group
+	c.Name = req.Name
+	c.Value = req.Value
+	c.Type = typ
+	c.Options = req.Options
+	c.IsPublic = req.IsPublic
+	c.Remark = req.Remark
+	c.Sort = req.Sort
+	if err := s.repo.Update(ctx, c, "Group", "Name", "Value", "Type", "Options", "IsPublic", "Remark", "Sort"); err != nil {
+		return err
+	}
+	_ = setting.RefreshKey(context.Background(), c.Key)
 	return nil
 }
 
