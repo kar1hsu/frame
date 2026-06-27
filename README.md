@@ -1,63 +1,66 @@
-# Frame — A Modular Go Admin Framework
+# Frame - Go 模块化后台管理框架
 
-English | [简体中文](README.zh-CN.md)
+简体中文 | [English](README.en-US.md)
 
-Frame is a modular admin/back-office framework for Go. It pairs a **Gin + GORM + Casbin + JWT** backend with a **Vue 3 + Element Plus** panel compiled straight into the binary — a single `go build` ships the whole app. Out of the box: **button-level RBAC** with auto-generated Casbin policies, a **DB-backed operation/audit log**, **runtime system config** (DB as source of truth, Redis-cached, instant multi-instance updates), and an **Asynq distributed task queue** with cron.
+Frame 是一个模块化的 Go 后台管理框架。后端基于 **Gin + GORM + Casbin + JWT**，前端 **Vue 3 + Element Plus** 通过 `embed` 编进二进制——一次 `go build` 即可交付整个应用。开箱即用：**按钮级 RBAC**（自动生成 Casbin 策略）、**数据库驱动的操作审计日志**、**运行时系统配置**（DB 为准、Redis 缓存、多实例即时生效），以及基于 **Asynq 的分布式任务队列**（含定时任务）。
 
-## Tech Stack
+## 技术栈
 
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| Web framework | Gin | Routing, middleware, request handling |
-| ORM | GORM | MySQL / PostgreSQL, switchable via config |
-| Auth | golang-jwt | JWT token issuing & verification |
-| Authorization | Casbin | RBAC model with path-parameter matching |
-| Config | Viper | YAML / ENV multi-environment config |
-| Logging | Zap + Lumberjack | Structured logs with rotation |
-| Cache | Redis (go-redis) | Token blacklist, permission cache, login throttling, config cache |
-| Task queue | Asynq | Distributed queue + cron, backed by Redis |
-| Passwords | bcrypt | Password hashing |
-| Frontend | Vue 3 + Element Plus + Vite | Admin panel, embedded via Go embed |
-| Deployment | Docker + docker-compose | One-command containerized deploy |
+| 层级 | 技术 | 用途 |
+|------|------|------|
+| Web 框架 | Gin | 路由、中间件、请求处理 |
+| ORM | GORM | 支持 MySQL / PostgreSQL，通过配置切换 |
+| 鉴权 | golang-jwt | JWT Token 签发与验证 |
+| 权限管理 | Casbin | RBAC 权限模型，支持路径参数匹配 |
+| 配置管理 | Viper | YAML/ENV 多环境配置 |
+| 日志 | Zap + Lumberjack | 结构化日志，自动轮转 |
+| 缓存 | Redis (go-redis) | Token 黑名单、权限缓存、登录限流 |
+| 任务队列 | Asynq | 分布式消息队列 + 定时任务，基于 Redis |
+| 密码 | bcrypt | 密码哈希加密 |
+| 前端 | Vue 3 + Element Plus + Vite | 管理面板，通过 Go embed 嵌入 |
+| 部署 | Docker + docker-compose | 一键容器化部署 |
 
-## Features
+## 功能特性
 
-- **Modular architecture** — extend via the `Module` interface; ships with Admin and API modules
-- **JWT auth** — Bearer-token authentication with a logout token blacklist
-- **Login protection** — Redis-backed failure counting; lock after 5 failures for 15 minutes
-- **RBAC** — Casbin-based role permissions with `keyMatch2` path-parameter matching
-- **Button-level permissions** — menus map to APIs for fine-grained list/query/add/edit/delete control
-- **Auto policy sync** — assigning menus to a role auto-generates the matching Casbin API policies, zero manual config
-- **Permission cache** — Redis caches per-user permission lists, cleared automatically on role change
-- **User / Role / Menu / API management** — full CRUD, tree menus (directory / menu / button), DB-driven permission config
-- **Operation log** — automatic audit of every write (operator / module / params / result / latency), including failed logins; searchable & purgeable
-- **System config** — DB-driven runtime config with a DB-as-source-of-truth + Redis shared cache; changes take effect instantly and stay consistent across instances; typed access from code
-- **Message queue** — Asynq + Redis distributed task queue (immediate / delayed / unique tasks)
-- **Cron jobs** — Asynq Scheduler with cron syntax in a dedicated process; optional `Unique` dedup against multi-instance double-enqueue
-- **Embedded panel** — Element Plus UI compiled into the Go binary via `embed`
-- **Multi-database** — switch between MySQL and PostgreSQL via config
+- **模块化架构** - 通过 `Module` 接口扩展，自带 Admin 和 API 两个模块
+- **JWT 鉴权** - Bearer Token 认证，支持退出登录 Token 黑名单
+- **登录保护** - Redis 记录登录失败次数，5 次失败后锁定 15 分钟
+- **RBAC 权限** - 基于 Casbin 的角色权限管理，支持 `keyMatch2` 路径参数匹配
+- **按钮级权限** - 菜单关联 API，支持 list/query/add/edit/delete 细粒度控制
+- **权限自动同步** - 分配菜单时自动生成对应的 Casbin API 策略，零手动配置
+- **权限缓存** - Redis 缓存用户权限列表，角色变更时自动清除
+- **用户管理** - 用户 CRUD、密码加密、角色分配
+- **角色管理** - 角色 CRUD、菜单权限分配（含按钮粒度）
+- **菜单管理** - 树形菜单管理（目录/菜单/按钮三级）、动态菜单
+- **API 管理** - API 接口注册，与菜单/按钮关联，数据库驱动的权限配置
+- **操作日志** - 自动审计所有写操作（操作人/模块/参数/结果/耗时），含登录失败审计，支持检索与清理
+- **系统配置** - 数据库驱动的运行时配置，DB 为准 + Redis 共享缓存，改完即时生效、多实例一致，代码内类型化读取
+- **消息队列** - 基于 Asynq + Redis 的分布式任务队列，支持即时/延迟/唯一任务
+- **定时任务** - Asynq Scheduler，cron 语法，独立 Scheduler 进程；可选 Unique 去重防多实例重复投递
+- **前端面板** - Element Plus 管理界面，通过 Go embed 内嵌到二进制
+- **多数据库** - 通过配置切换 MySQL 或 PostgreSQL
 
-## Quick Start
+## 快速开始
 
-### Requirements
+### 环境要求
 
 - Go 1.21+
-- Node.js 20+ (to build the frontend)
-- MySQL 8.0+ or PostgreSQL 14+
+- Node.js 20+（构建前端）
+- MySQL 8.0+ 或 PostgreSQL 14+
 - Redis 6+
 
-### 1. Clone
+### 1. 克隆项目
 
 ```bash
 git clone <repo-url> frame
 cd frame
 ```
 
-### 2. Configure
+### 2. 配置
 
-Edit `config/config.yaml` and set your database and Redis connection details.
+编辑 `config/config.yaml`，修改数据库和 Redis 连接信息。
 
-### 3. Build the frontend
+### 3. 构建前端
 
 ```bash
 cd web/admin
@@ -66,474 +69,488 @@ npm run build
 cd ../..
 ```
 
-### 4. Run
+### 4. 启动服务
 
 ```bash
 go run cmd/server/main.go
 ```
 
-Once started:
-- Admin panel: http://localhost:8080
+服务启动后：
+- 后台管理面板: http://localhost:8080
 - Admin API: http://localhost:8080/admin/*
-- Public API: http://localhost:8080/api/*
+- 对外 API: http://localhost:8080/api/*
 
-### 5. Default account
+### 5. 默认账号
 
-| Username | Password | Role |
-|----------|----------|------|
-| admin | admin123 | Super Admin |
+| 用户名 | 密码 | 角色 |
+|--------|------|------|
+| admin | admin123 | 超级管理员 |
 
-> Change the default password immediately after first login.
-
-### 6. Frontend dev mode
+### 6. 前端开发模式
 
 ```bash
 cd web/admin
 npm run dev
 ```
 
-Vite dev server runs at `http://localhost:5173` and proxies API calls to the backend at `http://localhost:8080`.
+Vite 开发服务器启动后访问 `http://localhost:5173`，API 自动代理到后端 `http://localhost:8080`。
 
-## Docker
+## Docker 部署
 
 ```bash
 cd deploy
-cp .env.example .env          # set DB/Redis passwords and timezone
+cp .env.example .env          # 设置数据库/Redis 密码、时区
 docker compose up -d
 ```
 
-Notes:
-- `deploy/config.yaml` is already wired for the compose network (`host: mysql` / `host: redis`) and is mounted into the app containers — edit app settings there, **not** in the root `config/config.yaml`.
-- `.env` configures the MySQL/Redis containers. If you change `MYSQL_ROOT_PASSWORD` / `REDIS_PASSWORD`, set the matching `database.password` / `redis.password` in `deploy/config.yaml` too — the app reads credentials from the mounted config, not from those env vars.
+说明：
+- `deploy/config.yaml` 已按容器网络配好（`host: mysql` / `host: redis`）并挂载进应用容器，应用配置改这里，**不要**动根目录的 `config/config.yaml`。
+- `.env` 用于 MySQL/Redis 容器。若修改了 `MYSQL_ROOT_PASSWORD` / `REDIS_PASSWORD`，需在 `deploy/config.yaml` 同步改 `database.password` / `redis.password`——应用从挂载的配置读取凭据，而非这些环境变量。
 
-## Project Structure
+## 项目结构
 
 ```
 frame/
 ├── cmd/
-│   ├── server/main.go          # Web server entrypoint (producer)
-│   ├── worker/main.go          # Worker entrypoint (consumer, multi-instance)
-│   └── scheduler/main.go       # Scheduler entrypoint (cron dispatch, single instance)
+│   ├── server/main.go          # Web 服务入口（生产者）
+│   ├── worker/main.go          # Worker 进程入口（消费者，可多实例）
+│   └── scheduler/main.go       # Scheduler 进程入口（定时投递，单实例）
 ├── config/
-│   ├── config.yaml             # Application config
-│   └── rbac_model.conf         # Casbin RBAC model
+│   ├── config.yaml             # 应用配置
+│   └── rbac_model.conf         # Casbin RBAC 模型
 ├── internal/
-│   ├── app/                    # Bootstrap (Config/Logger/DB/Redis/Casbin/Task, AutoMigrate/Seed)
-│   ├── middleware/             # Middleware (JWT/Casbin/CORS/Logger/OperationLog)
-│   ├── model/                  # Data models (User/Role/Menu/API/Config/OperationLog)
-│   ├── server/                 # HTTP server, route registration, static files
-│   ├── repository/             # Data-access layer (generic BaseRepo[T] + QueryOptions)
-│   ├── tasks/                  # Task definitions & registration (handlers + cron jobs)
+│   ├── app/                    # 应用初始化 (Config/Logger/DB/Redis/Casbin/Task)
+│   ├── middleware/             # 中间件 (JWT/Casbin/CORS/Logger/OperationLog)
+│   ├── model/                  # 数据模型 (User/Role/Menu/API/Config/OperationLog)
+│   ├── server/                 # HTTP 服务 & 路由注册 & 静态文件
+│   ├── repository/             # 数据访问层
+│   ├── tasks/                  # 任务定义与注册（Handler + 定时任务）
 │   ├── module/
-│   │   ├── admin/              # Admin module
-│   │   │   ├── handler/        # Request handlers (Auth/User/Role/Menu/API/Config/OperationLog)
-│   │   │   ├── service/        # Business logic
-│   │   │   └── router.go       # Admin route registration
-│   │   └── api/                # Public API module
-│   └── pkg/                    # Internal shared packages
-│       ├── jwt/                # JWT issue/parse
-│       ├── cache/              # Cache layer (Store interface / RedisStore / domain caches)
-│       ├── setting/            # Runtime system config (typed accessor + Redis cache + defaults registry)
-│       ├── task/               # Task system (Client/Worker/Scheduler/Manager)
-│       ├── response/           # Unified response envelope
-│       ├── errcode/            # Error codes
-│       └── utils/              # Helpers (password hashing / pagination)
-├── web/admin/                  # Vue 3 frontend project
-├── embed.go                    # Go embed for the frontend
-└── deploy/                     # Docker deployment files
+│   │   ├── admin/              # Admin 后台模块
+│   │   │   ├── handler/        # 请求处理 (Auth/User/Role/Menu/API/Config/OperationLog)
+│   │   │   ├── service/        # 业务逻辑
+│   │   │   └── router.go       # Admin 路由注册
+│   │   └── api/                # 对外 API 模块
+│   └── pkg/                    # 内部公共包
+│       ├── jwt/                # JWT 签发/解析
+│       ├── cache/              # 缓存层 (Store接口/RedisStore/业务缓存)
+│       ├── setting/            # 运行时系统配置 (类型化访问器 + Redis缓存 + 默认值注册表)
+│       ├── task/               # 任务系统 (Client/Worker/Scheduler/Manager)
+│       ├── response/           # 统一响应格式
+│       ├── errcode/            # 错误码
+│       └── utils/              # 工具 (密码哈希/分页)
+├── web/admin/                  # Vue 3 前端项目
+├── embed.go                    # Go embed 嵌入前端
+└── deploy/                     # Docker 部署文件
 ```
 
-## Route Layers
+## 路由层级设计
 
-| Layer | Middleware | Description | Example |
-|-------|-----------|-------------|---------|
-| Public | none | No login required | `POST /admin/login` |
-| Authenticated | JWT | Any logged-in user (profile, dropdowns) | `GET /admin/profile`, `/permissions`, `/roles/all` |
-| Protected | JWT + Casbin | RBAC-authorized management actions | `GET /admin/users`, `POST /admin/users` |
+| 层级 | 中间件 | 说明 | 示例 |
+|------|--------|------|------|
+| 公开 | 无 | 无需登录 | `POST /admin/login` |
+| 已登录 | JWT | 登录即可访问（个人信息、下拉选项） | `GET /admin/profile`, `/permissions`, `/roles/all` |
+| 管理权限 | JWT + Casbin | 需要 RBAC 授权的管理操作 | `GET /admin/users`, `POST /admin/users` |
 
-## API Overview
+## API 概览
 
-### Auth
+### 认证
 
-| Method | Path | Description | Auth |
-|--------|------|-------------|------|
-| POST | /admin/login | Login (with failure throttling) | none |
-| POST | /admin/logout | Logout (token blacklisted) | JWT |
-| GET | /admin/profile | Current user info | JWT |
-| GET | /admin/permissions | Current user permission codes (cached) | JWT |
+| 方法 | 路径 | 说明 | 鉴权 |
+|------|------|------|------|
+| POST | /admin/login | 登录（含登录失败限流） | 无 |
+| POST | /admin/logout | 退出登录（Token 加入黑名单） | JWT |
+| GET | /admin/profile | 获取当前用户信息 | JWT |
+| GET | /admin/permissions | 获取当前用户权限标识列表（带缓存） | JWT |
 
-### Users
+### 用户管理
 
-| Method | Path | Description | Auth |
-|--------|------|-------------|------|
-| GET | /admin/users | User list | JWT + RBAC |
-| POST | /admin/users | Create user | JWT + RBAC |
-| GET | /admin/users/:id | User detail | JWT + RBAC |
-| PUT | /admin/users/:id | Update user | JWT + RBAC |
-| DELETE | /admin/users/:id | Delete user | JWT + RBAC |
+| 方法 | 路径 | 说明 | 鉴权 |
+|------|------|------|------|
+| GET | /admin/users | 用户列表 | JWT + RBAC |
+| POST | /admin/users | 创建用户 | JWT + RBAC |
+| GET | /admin/users/:id | 用户详情 | JWT + RBAC |
+| PUT | /admin/users/:id | 更新用户 | JWT + RBAC |
+| DELETE | /admin/users/:id | 删除用户 | JWT + RBAC |
 
-### Roles
+### 角色管理
 
-| Method | Path | Description | Auth |
-|--------|------|-------------|------|
-| GET | /admin/roles | Role list (paginated) | JWT + RBAC |
-| GET | /admin/roles/all | All roles (dropdown) | JWT |
-| POST | /admin/roles | Create role | JWT + RBAC |
-| GET | /admin/roles/:id | Role detail | JWT + RBAC |
-| PUT | /admin/roles/:id | Update role | JWT + RBAC |
-| DELETE | /admin/roles/:id | Delete role | JWT + RBAC |
-| PUT | /admin/roles/:id/menus | Assign menus (auto-syncs Casbin policy) | JWT + RBAC |
+| 方法 | 路径 | 说明 | 鉴权 |
+|------|------|------|------|
+| GET | /admin/roles | 角色列表（分页） | JWT + RBAC |
+| GET | /admin/roles/all | 全部角色（下拉选项） | JWT |
+| POST | /admin/roles | 创建角色 | JWT + RBAC |
+| GET | /admin/roles/:id | 角色详情 | JWT + RBAC |
+| PUT | /admin/roles/:id | 更新角色 | JWT + RBAC |
+| DELETE | /admin/roles/:id | 删除角色 | JWT + RBAC |
+| PUT | /admin/roles/:id/menus | 分配菜单（自动同步 Casbin 策略） | JWT + RBAC |
 
-### Menus
+### 菜单管理
 
-| Method | Path | Description | Auth |
-|--------|------|-------------|------|
-| GET | /admin/menus/tree | Full menu tree | JWT |
-| GET | /admin/menus/user | Current user's menu tree | JWT |
-| POST | /admin/menus | Create menu (can link APIs) | JWT + RBAC |
-| GET | /admin/menus/:id | Menu detail (with linked APIs) | JWT + RBAC |
-| PUT | /admin/menus/:id | Update menu | JWT + RBAC |
-| DELETE | /admin/menus/:id | Delete menu | JWT + RBAC |
+| 方法 | 路径 | 说明 | 鉴权 |
+|------|------|------|------|
+| GET | /admin/menus/tree | 完整菜单树 | JWT |
+| GET | /admin/menus/user | 当前用户菜单树 | JWT |
+| POST | /admin/menus | 创建菜单（支持关联 API） | JWT + RBAC |
+| GET | /admin/menus/:id | 菜单详情（含关联的 API） | JWT + RBAC |
+| PUT | /admin/menus/:id | 更新菜单 | JWT + RBAC |
+| DELETE | /admin/menus/:id | 删除菜单 | JWT + RBAC |
 
-### APIs
+### API 管理
 
-| Method | Path | Description | Auth |
-|--------|------|-------------|------|
-| GET | /admin/apis/all | All APIs (dropdown) | JWT |
-| GET | /admin/apis | API list (paginated) | JWT + RBAC |
-| POST | /admin/apis | Create API | JWT + RBAC |
-| PUT | /admin/apis/:id | Update API | JWT + RBAC |
-| DELETE | /admin/apis/:id | Delete API | JWT + RBAC |
+| 方法 | 路径 | 说明 | 鉴权 |
+|------|------|------|------|
+| GET | /admin/apis/all | 全部 API（下拉选项） | JWT |
+| GET | /admin/apis | API 列表（分页） | JWT + RBAC |
+| POST | /admin/apis | 创建 API | JWT + RBAC |
+| PUT | /admin/apis/:id | 更新 API | JWT + RBAC |
+| DELETE | /admin/apis/:id | 删除 API | JWT + RBAC |
 
-### Operation Log
+### 操作日志
 
-| Method | Path | Description | Auth |
-|--------|------|-------------|------|
-| GET | /admin/operation-logs | Log list (filter by operator / module / result / time range / keyword) | JWT + RBAC |
-| GET | /admin/operation-logs/:id | Log detail | JWT + RBAC |
-| DELETE | /admin/operation-logs/:id | Delete one | JWT + RBAC |
-| DELETE | /admin/operation-logs | Clear all | JWT + RBAC |
+| 方法 | 路径 | 说明 | 鉴权 |
+|------|------|------|------|
+| GET | /admin/operation-logs | 操作日志列表（按操作人/模块/成败/时间段/关键字过滤） | JWT + RBAC |
+| GET | /admin/operation-logs/:id | 日志详情 | JWT + RBAC |
+| DELETE | /admin/operation-logs/:id | 删除单条 | JWT + RBAC |
+| DELETE | /admin/operation-logs | 清空日志 | JWT + RBAC |
 
-### System Config
+### 系统配置
 
-| Method | Path | Description | Auth |
-|--------|------|-------------|------|
-| GET | /admin/configs | Config list (optional `?group=`) | JWT + RBAC |
-| POST | /admin/configs | Create a custom config | JWT + RBAC |
-| PUT | /admin/configs | Batch-save values `{items:[{key,value}]}` | JWT + RBAC |
-| DELETE | /admin/configs/:id | Delete (built-ins protected) | JWT + RBAC |
-| POST | /admin/configs/refresh | Refresh cache (`?key=` for one, otherwise all) | JWT + RBAC |
-| GET | /api/configs/public | Public config key→value (no auth, for the login page / app bootstrap) | none |
+| 方法 | 路径 | 说明 | 鉴权 |
+|------|------|------|------|
+| GET | /admin/configs | 配置列表（可选 `?group=`） | JWT + RBAC |
+| POST | /admin/configs | 新增自定义配置 | JWT + RBAC |
+| PUT | /admin/configs | 批量保存值 `{items:[{key,value}]}` | JWT + RBAC |
+| DELETE | /admin/configs/:id | 删除配置（内置不可删） | JWT + RBAC |
+| POST | /admin/configs/refresh | 刷新缓存（`?key=` 单个，否则全部） | JWT + RBAC |
+| GET | /api/configs/public | 公开配置 key→value（免鉴权，供登录页/前端启动） | 无 |
 
-## Permission System
+## 权限系统
 
-### Menu types
+### 菜单类型
 
-| Type | `type` value | Meaning |
-|------|--------------|---------|
-| Directory | 0 | A group, e.g. "System" |
-| Menu | 1 | A page, e.g. "Users" |
-| Button | 2 | An action permission, e.g. "Add User" / "Delete User" |
+| 类型 | type 值 | 说明 |
+|------|---------|------|
+| 目录 | 0 | 菜单分组，如"系统管理" |
+| 菜单 | 1 | 页面入口，如"用户管理" |
+| 按钮 | 2 | 操作权限，如"新增用户"、"删除用户" |
 
-### Permission code convention
-
-```
-module:resource:action
-```
-
-Standard actions per menu:
-
-| Action | Example | Meaning |
-|--------|---------|---------|
-| list | system:user:list | View list (menu-level, controls sidebar visibility) |
-| query | system:user:query | View detail (read a single record) |
-| add | system:user:add | Create |
-| edit | system:user:edit | Update |
-| delete | system:user:delete | Delete |
-
-### Menu field rules
-
-| Field | Directory | Menu | Button |
-|-------|-----------|------|--------|
-| Route path | `/module` | `/module/resource` | empty |
-| Component path | empty | `module/resource/index` | empty |
-| Permission code | empty | `module:resource:list` | `module:resource:action` |
-| Icon | yes | yes | empty |
-| Linked APIs | none | list endpoint | the matching endpoint(s) |
-
-### Permission workflow (pure admin UI, no code)
-
-1. **API management** — register the API endpoint records
-2. **Menu management** — create menus & buttons, linking the matching APIs
-3. **Role management** — assign menus/buttons to a role; Casbin policies are generated automatically
-
-### Redis Cache
-
-#### Design
-
-The cache is abstracted behind an interface so business code never depends on go-redis directly:
+### 权限标识命名规范
 
 ```
-Business code (cache.BlacklistToken / cache.GetUserPermissions ...)
+模块:资源:操作
+```
+
+每个菜单下的标准操作：
+
+| 操作 | 标识示例 | 含义 |
+|------|----------|------|
+| list | system:user:list | 查看列表（菜单级，控制侧边栏显示） |
+| query | system:user:query | 查看详情（只读查看单条记录） |
+| add | system:user:add | 新增 |
+| edit | system:user:edit | 编辑 |
+| delete | system:user:delete | 删除 |
+
+### 菜单字段填写规则
+
+| 字段 | 目录 | 菜单 | 按钮 |
+|------|------|------|------|
+| 路由路径 | `/模块` | `/模块/资源` | 留空 |
+| 组件路径 | 留空 | `模块/资源/index` | 留空 |
+| 权限标识 | 留空 | `模块:资源:list` | `模块:资源:操作` |
+| 图标 | 填写 | 填写 | 留空 |
+| 关联API | 无 | 列表接口 | 对应的接口 |
+
+### 权限配置流程（纯后台操作，零代码）
+
+1. **API 管理** — 注册新的 API 接口记录
+2. **菜单管理** — 创建菜单和按钮子项，关联对应的 API
+3. **角色管理** — 给角色分配菜单/按钮，系统自动生成 Casbin 策略
+
+### Redis 缓存
+
+#### 架构设计
+
+缓存层通过接口抽象，业务代码不直接依赖 go-redis：
+
+```
+业务代码 (cache.BlacklistToken / cache.GetUserPermissions ...)
     │
     ▼
-cache.Store interface (String/Hash/List/Set)
+cache.Store 接口 (String/Hash/List/Set 全类型支持)
     │
     ▼
-cache.RedisStore (wraps go-redis, handles the key prefix)
+cache.RedisStore 实现 (封装 go-redis，自动处理 key 前缀)
 ```
 
-#### Global key prefix
+#### 全局 Key 前缀
 
-Configured in `config.yaml` so multiple projects can share one Redis instance:
+通过 `config.yaml` 配置，多项目共用 Redis 时不会冲突：
 
 ```yaml
 redis:
   key_prefix: "frame:"
 ```
 
-Stored keys look like `frame:token:blacklist:eyJhb...`, `frame:perm:user:1`.
+实际存储的 key 示例：`frame:token:blacklist:eyJhb...`、`frame:perm:user:1`
 
-#### Built-in caches
+#### Store 接口支持的数据类型
 
-| Feature | Key format | TTL | Notes |
-|---------|-----------|-----|-------|
-| Token blacklist | `token:blacklist:{token}` | matches JWT expiry | invalidates token on logout |
-| Permission cache | `perm:user:{userID}` | 10 min | reduces permission queries |
-| Login throttle | `login:fail:{username}` | 15 min | lock after 5 failures |
-| System config | `config` (hash) | none | shared runtime-config cache |
+| 类型 | 方法 |
+|------|------|
+| String | `Get` `Set` `Del` `Exists` `Incr` `Decr` `Expire` `TTL` `Scan` |
+| Hash | `HGet` `HSet` `HDel` `HGetAll` `HExists` `HIncrBy` `HKeys` `HLen` `HMGet` |
+| List | `LPush` `RPush` `LPop` `RPop` `LRange` `LLen` `LRem` `LIndex` `LTrim` |
+| Set | `SAdd` `SRem` `SMembers` `SIsMember` `SCard` |
 
-#### Using the cache
+#### 内置缓存功能
+
+| 功能 | Key 格式 | TTL | 说明 |
+|------|----------|-----|------|
+| Token 黑名单 | `token:blacklist:{token}` | 与 JWT 过期时间一致 | 退出登录后 Token 立即失效 |
+| 权限缓存 | `perm:user:{userID}` | 10 分钟 | 减少权限查询的数据库压力 |
+| 登录限流 | `login:fail:{username}` | 15 分钟 | 5 次失败后锁定 |
+
+#### 业务中使用缓存
 
 ```go
-// Domain helpers
+// 直接调用封装好的业务方法
 cache.BlacklistToken(token, expiration)
 cache.IsTokenBlacklisted(token)
 cache.SetUserPermissions(userID, perms)
 
-// Or any Redis op via the Store interface
+// 或通过 Store 接口使用任意 Redis 操作
 store := cache.GetStore()
-store.HSet("user:profile:1", "name", "Alice", "age", "25")
+store.HSet("user:profile:1", "name", "张三", "age", "25")
 store.LPush("task:queue", taskJSON)
+store.SAdd("online:users", "user_1")
 ```
 
-Swap the backend (tests, in-memory, cluster) by implementing `cache.Store` and calling `cache.InitStore(...)`.
+#### 自定义实现
 
-## System Config (Runtime Dynamic Config)
+测试或切换缓存方案时，实现 `cache.Store` 接口即可：
 
-Unlike `config/config.yaml` (**infrastructure** config: database, Redis, JWT secret), system config is **stored in the DB, editable from the admin UI, and applied instantly without a restart** — things like site name, whether self-registration is open, minimum password length, log retention days, etc.
+```go
+cache.InitStore(myMemoryStore)  // 替换为内存实现
+cache.InitStore(myRedisCluster) // 替换为集群实现
+```
 
-> Boundary: keep secrets (JWT secret, DB password) in `config.yaml` — do **not** move them into DB config.
+## 系统配置（运行时动态配置）
 
-### High availability
+与 `config/config.yaml`（数据库、Redis、JWT 密钥等**基础设施配置**）不同，系统配置是**存数据库、后台可改、改完即时生效、无需重启**的运行期配置——站点名称、是否开放注册、密码最小长度、日志保留天数等。
+
+> 边界：机密（JWT 密钥、数据库密码）仍放 `config.yaml`，不要进数据库配置。
+
+### 高可用设计
 
 ```text
-Startup:  DB(sys_config) ──load──▶ Redis hash(frame:config) warm-up
-Read:     setting.GetXxx() ─▶ Redis hit ─▶ miss → query DB & backfill ─▶ still missing → compiled-in default
-Write:    admin save ─▶ write DB (source of truth) ─▶ write-through Redis
-Cluster:  all instances share one Redis cache → consistent, no pub/sub needed
-Degrade:  Redis down → read DB directly;  DB/key missing → registry default (a read never brings the app down)
+启动:   DB(sys_config) ──载入──▶ Redis Hash(frame:config) 预热
+读取:   setting.GetXxx() ─▶ Redis 命中 ─▶ 未命中查 DB 并回填 ─▶ 仍无则用代码内默认值
+写入:   后台保存 ─▶ 写 DB(为准) ─▶ 写穿 Redis
+多实例: 所有实例共享同一个 Redis 缓存，天然一致，无需 Pub/Sub
+降级:   Redis 挂 → 直接查 DB；DB/键缺失 → 用 registry 默认值（读取永不致命）
 ```
 
-- **DB is the source of truth, Redis is a shared cache** — every instance reads the same Redis, so a change anywhere is global; no broadcast required.
-- **Three-tier fallback** — Redis → DB → compiled-in default; any layer can hiccup without breaking reads.
-- **Manual refresh** — refresh a single key or refresh everything, for out-of-band DB edits or to force a cache rebuild.
+- **DB 为准，Redis 作共享缓存** —— 多实例读同一个 Redis，改一处全局生效，不需要广播。
+- **三级兜底** —— Redis → DB → 代码默认值，任意一层抖动都不影响读取。
+- **手动刷新** —— 提供「单个刷新」与「一键全部刷新」，用于库被旁路修改、或需强制重建缓存的场景。
 
-### Reading config in code
+### 在业务代码中读取配置
 
-Use the typed accessors in `internal/pkg/setting` — zero boilerplate (the Redis → DB → default fallback is handled internally):
+通过 `internal/pkg/setting` 的类型化访问器读取，零样板（内部自动走「Redis → DB → 默认值」）：
 
 ```go
 import "github.com/kar1hsu/frame/internal/pkg/setting"
 
-siteName := setting.GetString("site.name")                  // string
-allowReg := setting.GetBool("user.allow_register")          // bool ("true"/"1" → true)
-minLen   := setting.GetInt("security.password_min_length")  // int
+siteName := setting.GetString("site.name")                  // 字符串
+allowReg := setting.GetBool("user.allow_register")          // 布尔（"true"/"1" 为真）
+minLen   := setting.GetInt("security.password_min_length")  // 整数
 retain   := setting.GetInt64("log.operation_retain_days")   // int64
-rate     := setting.GetFloat("some.rate")                   // float64
+rate     := setting.GetFloat("some.rate")                   // 浮点
 ```
 
-### Adding a config key
+### 新增一个配置项
 
-Add one line to `registry` in `internal/pkg/setting/registry.go`. It is both the **seed source** and the **fallback-default source**:
+在 `internal/pkg/setting/registry.go` 的 `registry` 里加一行即可——它同时是**种子来源**和**兜底默认值来源**：
 
 ```go
 var registry = []definition{
-    // Group (frontend tab), Key (unique), Name (label), Type, Value (default), IsPublic
-    {Group: "Site", Key: "site.name", Name: "Site Name", Type: "string", Value: "Frame Admin", IsPublic: true},
-    {Group: "Mail", Key: "mail.smtp_host", Name: "SMTP Host", Type: "string", Value: ""}, // ← new
+    // Group 分组(前端按它分 Tab), Key 唯一键, Name 显示名, Type 类型, Value 默认值, IsPublic 是否公开
+    {Group: "站点", Key: "site.name", Name: "站点名称", Type: "string", Value: "Frame Admin", IsPublic: true},
+    {Group: "邮件", Key: "mail.smtp_host", Name: "SMTP 主机", Type: "string", Value: ""}, // ← 新增
 }
 ```
 
-On startup, `setting.Init` **idempotently** inserts missing keys (without overwriting values an admin has changed), so new keys propagate to existing databases automatically.
+启动时 `setting.Init` 会**幂等补齐**缺失的键（不会覆盖管理员改过的值），所以新增配置会自动同步到已有库。
 
-### Config types
+### 配置类型
 
-`type` drives both the UI control and how the value is parsed:
+`Type` 决定前端用什么控件渲染、以及取值如何解析：
 
-| type | UI control | Accessor |
-|------|-----------|----------|
-| string | input | `GetString` |
-| int / float | input | `GetInt` / `GetInt64` / `GetFloat` |
-| bool | switch | `GetBool` |
-| text / json | textarea | `GetString` |
-| select | dropdown (`options` is a JSON array) | `GetString` |
+| type | 前端控件 | 取值方法 |
+|------|----------|----------|
+| string | 输入框 | `GetString` |
+| int / float | 输入框 | `GetInt` / `GetInt64` / `GetFloat` |
+| bool | 开关 | `GetBool` |
+| text / json | 多行文本框 | `GetString` |
+| select | 下拉（`options` 为 JSON 数组） | `GetString` |
 
-### Model fields (sys_config)
+### 数据模型字段（sys_config）
 
-| Field | Description |
-|-------|-------------|
-| group | Group; the frontend renders one tab per group |
-| key | Unique key, e.g. `site.name` |
-| value | Value (always stored as a string) |
-| type | Type (see table above) |
-| options | Select options / validation rules (JSON) |
-| is_public | Readable without auth (see public endpoint) |
-| editable | Whether the admin UI may edit it |
-| builtin | Built-in (cannot be deleted; registry-seeded ones are `true`) |
+| 字段 | 说明 |
+|------|------|
+| group | 分组，前端按它分 Tab |
+| key | 唯一键，如 `site.name` |
+| value | 值（统一以字符串存储） |
+| type | 类型，见上表 |
+| options | select 选项 / 校验规则（JSON） |
+| is_public | 是否免鉴权可读（见公开端点） |
+| editable | 是否允许后台编辑 |
+| builtin | 内置项（不可删除；registry 种子均为 true） |
 
-### Public endpoint (no auth)
+### 公开端点（免鉴权）
 
-Keys with `is_public=true` can be read without authentication — handy for the login page / app bootstrap (site name, logo, …):
+`is_public=true` 的项可被公开读取，供登录页/前端启动时拿站点名、Logo 等：
 
 ```
 GET /api/configs/public  →  { "code":0, "data": { "site.name":"...", "site.logo":"..." } }
 ```
 
-### Admin UI
+### 后台使用
 
-Under **System → System Config**: grouped into tabs, each value rendered by its type. **Save** submits changes in a batch and refreshes the cache; each row can be **refreshed individually**, and the top-right button **refreshes the whole cache**. Non-built-in entries can be deleted.
+「系统管理 → 系统配置」：按分组 Tab 展示、按类型渲染控件；**保存**批量提交并自动刷新缓存；每项可**单独刷新缓存**，右上角可**一键刷新全部缓存**；非内置项可删除。完整接口见上文 [API 概览 · 系统配置](#系统配置)。
 
-## Operation Log (Audit)
+## 操作日志（审计）
 
-Every write (POST/PUT/DELETE/PATCH) is recorded to the database and searchable from the admin UI. This is a **queryable audit trail in the DB**, distinct from the Zap file logs used for ops/debugging — the two coexist.
+自动把所有写操作（POST/PUT/DELETE/PATCH）记入数据库，后台可检索。与 Zap 文件日志（运维排障）不同，这是**入库、可查询的审计轨迹**，两者并存。
 
-### How it works
+### 工作方式
 
-- **Auto-captured by middleware** — `middleware.OperationLog()` sits between auth and RBAC, so even denied (403) attempts leave a trace.
-- **Reuses sys_api** — matches `method + route` against `sys_api` to fill the module/action names automatically; no extra mapping to maintain.
-- **Redacts & truncates** — sensitive request-body fields (`password`, `token`, …) are stored as `***`; oversized bodies are truncated (default 8 KB).
-- **Success detection** — parses the response business code (0 = success) plus the HTTP status.
-- **Best-effort** — written synchronously, but a logging failure only goes to Zap and never affects the main request.
-- **Login audit** — login (including failures, with the attempted username) and logout are folded into the operation log under the "Auth" module.
+- **中间件自动采集** —— `middleware.OperationLog()` 挂在管理路由上，位于鉴权与 RBAC 之间（被拒的 403 也会留痕）。
+- **复用 sys_api** —— 用「请求方法 + 路由」匹配 `sys_api` 的分组/描述，自动填模块名与操作名，无需额外维护映射。
+- **脱敏 + 截断** —— 请求体中 `password`/`token` 等敏感字段记为 `***`，超长截断（默认 8KB）。
+- **判定成败** —— 解析响应业务码（0 为成功）+ HTTP 状态。
+- **best-effort** —— 同步写入，但落库失败只记 Zap、不影响主请求。
+- **登录审计** —— 登录（含失败，记下尝试的用户名）、登出并入操作日志（模块「认证」）。
 
-Recorded fields include: operator & role snapshot, module/action, method/route/path, target ID, request params, HTTP status / business code / success, error message, IP/UA, and latency.
+记录字段包含：操作人/角色快照、模块/操作、方法/路由/路径、目标 ID、请求参数、HTTP 状态/业务码/成败、错误信息、IP/UA、耗时。
 
-### Retention
+### 留存清理
 
-Retention days come from the `log.operation_retain_days` config (default 30). `OperationLogRepo.DeleteBefore(t)` provides a hard delete by time, which you can wire to a Scheduler cron for periodic cleanup (not enabled by default).
+保留天数由系统配置 `log.operation_retain_days`（默认 30 天）控制；`OperationLogRepo.DeleteBefore(t)` 提供按时间硬删，可在 Scheduler 注册一个 cron 调用它实现定时清理（默认未内置启用）。
 
-## Task System (Queue + Cron)
+## 任务系统（消息队列 + 定时任务）
 
-Built on Asynq + Redis; supports distributed deployment with automatic load balancing across multiple Worker instances.
+基于 Asynq + Redis，支持分布式部署，多 Worker 实例自动负载均衡。
 
-### Architecture
+### 架构
 
 ```
-Web server (producer)   Scheduler (cron dispatch)   Worker (consumer)
-cmd/server/main.go      cmd/scheduler/main.go        cmd/worker/main.go
-  │ Client.Enqueue()      │ dispatch by cron          │ tasks.RegisterHandlers()
-  │                       │ (single instance + Unique) │ (multi-instance, balanced)
-  ▼                       ▼                            ▲
-┌──────────────────────────────────────────────────────┐
-│                        Redis                          │
-│            queues: critical / default / low           │
-└──────────────────────────────────────────────────────┘
+Web 服务 (生产者)       Scheduler (定时投递)      Worker (消费者)
+cmd/server/main.go     cmd/scheduler/main.go     cmd/worker/main.go
+  │ Client.Enqueue()     │ 按 cron 投递            │ tasks.RegisterHandlers()
+  │                      │ (单实例 + Unique 去重)  │ (可多实例，自动负载均衡)
+  ▼                      ▼                         ▲
+┌─────────────────────────────────────────────────────┐
+│                       Redis                         │
+│            队列: critical / default / low            │
+└─────────────────────────────────────────────────────┘
 ```
 
-### Processes
+### 启动进程
 
-The web server, Scheduler, and Worker are three independent processes that can be deployed separately:
+Web 服务、Scheduler、Worker 是三个独立进程，可分开部署：
 
 ```bash
-# Terminal 1: web server (producer)
+# 终端 1: Web 服务（生产者）
 go run cmd/server/main.go
 
-# Terminal 2: Scheduler (cron dispatcher)
+# 终端 2: Scheduler（定时任务投递端）
 go run cmd/scheduler/main.go
 
-# Terminal 3: Worker (consumer)
+# 终端 3: Worker（消费者）
 go run cmd/worker/main.go
 ```
 
-**Scaling & multiple instances**:
+**水平扩展与多实例**：
 
-- **Workers scale freely** — multiple Workers consume the same Redis queues with automatic load balancing; true distributed consumption.
-- **Scheduler must be a single instance** — `asynq.Scheduler` has no leader election, so N instances dispatch each cron job N times. Run exactly one Scheduler in production. As a safety net, give cron jobs a `Unique` TTL (below) so Redis dedups duplicate dispatches even if a second instance is started by mistake.
+- **Worker 可任意多实例** — 多个 Worker 消费同一 Redis 队列，任务自动负载均衡，是真正的分布式消费。
+- **Scheduler 必须单实例** — `asynq.Scheduler` 没有选主机制，N 个实例会让每个 cron 任务被投递 N 次。生产环境只部署一个 Scheduler。作为兜底，给 cron 任务设置 `Unique` TTL（见下），即使误起第二个实例，Redis 也会对重复投递去重。
 
-### Enqueue tasks (producer)
+### 投递任务（生产者）
 
-From any handler / service:
+在任意 Handler / Service 中调用：
 
 ```go
-// immediate
+// 即时任务
 app.TaskMgr.Client.Enqueue("email:send", EmailPayload{To: "user@example.com", Subject: "Welcome"})
 
-// delayed (run in 10 minutes)
+// 延迟任务（10 分钟后执行）
 app.TaskMgr.Client.EnqueueDelay("email:send", payload, 10*time.Minute)
 
-// unique (dedup the same task within 1 hour)
+// 去重任务（1 小时内同样的任务只投递一次）
 app.TaskMgr.Client.EnqueueUnique("report:generate", payload, 1*time.Hour)
 
-// to a specific (high-priority) queue
+// 指定队列（高优先级）
 app.TaskMgr.Client.EnqueueToQueue("order:notify", payload, "critical")
 ```
 
-### Define a handler (consumer)
+### 定义任务处理器（消费者）
 
-Under `internal/tasks/`:
+在 `internal/tasks/` 中创建：
 
 ```go
-// internal/tasks/types.go — the task type name
+// internal/tasks/types.go — 定义任务类型名
 const TypeOrderNotify = "order:notify"
 
-// internal/tasks/order.go — the handler
+// internal/tasks/order.go — 实现处理逻辑
 func HandleOrderNotify(ctx context.Context, payload []byte) error {
     var p OrderPayload
     json.Unmarshal(payload, &p)
-    // ...
+    // 处理逻辑...
     return nil
 }
 
-// internal/tasks/register.go — register it
+// internal/tasks/register.go — 注册
 func RegisterHandlers(w *task.Worker) {
     w.Handle(TypeOrderNotify, HandleOrderNotify)
 }
 ```
 
-### Cron jobs
+### 定时任务
 
-Registered in `internal/tasks/register.go` and loaded by the `cmd/scheduler` process:
+在 `internal/tasks/register.go` 中注册，由 `cmd/scheduler` 进程加载：
 
 ```go
 func RegisterCronJobs(s *task.Scheduler) {
-    // daily at 02:00 (Unique TTL < interval → dedup across instances)
+    // 每天凌晨 2 点清理（Unique TTL < 触发间隔，多实例下去重）
     s.Register(task.CronTask{Cron: "0 2 * * *", TypeName: TypeCleanup, Unique: 23 * time.Hour})
-    // every 5 minutes
+    // 每 5 分钟执行
     s.Register(task.CronTask{Cron: "@every 5m", TypeName: TypeSyncData, Unique: 4 * time.Minute})
-    // a specific queue
+    // 指定队列
     s.Register(task.CronTask{Cron: "0 8 * * 1", TypeName: TypeWeeklyReport, Queue: "low"})
 }
 ```
 
-> `Unique` is optional: set it slightly below the trigger interval and Redis will let only one task enter the queue even if multiple Schedulers dispatch at once.
+> `Unique` 字段可选：设为略小于触发间隔的值后，即便有多个 Scheduler 实例同时投递，Redis 也只会让一个任务进入队列。
 
-### Queue priority
+### 队列优先级
 
-Configured in `config.yaml`; earlier means higher priority:
+在 `config.yaml` 中配置，排在前面的优先级更高：
 
 ```yaml
 task:
   concurrency: 10
   queues:
-    - critical    # weight 3 (highest)
-    - default     # weight 2
-    - low         # weight 1 (lowest)
+    - critical    # 权重 3（最高）
+    - default     # 权重 2
+    - low         # 权重 1（最低）
 ```
 
-## Extending Modules
+## 扩展模块
 
-Implement the `Module` interface to add a new module:
+实现 `Module` 接口即可添加新模块：
 
 ```go
 type Module interface {
@@ -542,14 +559,14 @@ type Module interface {
 }
 ```
 
-Register it in `main.go`:
+在 `main.go` 中注册：
 
 ```go
 router := server.NewRouter(
     frame.AdminDist,
     admin.New(),
     api.New(),
-    yourmodule.New(), // new module
+    yourmodule.New(), // 新模块
 )
 ```
 
