@@ -1,4 +1,5 @@
-version: '3.8'
+# Group Name
+name: ${GROUP_NAME:-frame}
 
 services:
   mysql:
