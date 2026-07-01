@@ -15,8 +15,8 @@ import (
 	"github.com/kar1hsu/frame/internal/repository"
 )
 
-// maxBodyCapture caps how many request-body bytes are stored per log entry, so a
-// large payload can't blow up memory or the row.
+// maxBodyCapture caps how many request/response bytes are stored per log entry,
+// so a large payload can't blow up memory or the row.
 const maxBodyCapture = 8 << 10 // 8KB
 
 // writeLogTimeout bounds the synchronous log insert so a slow DB can't stall the
@@ -24,7 +24,7 @@ const maxBodyCapture = 8 << 10 // 8KB
 const writeLogTimeout = 3 * time.Second
 
 // sensitiveKeys are redacted (value -> ***) wherever they appear in a captured
-// JSON request body.
+// JSON request or response body.
 var sensitiveKeys = map[string]struct{}{
 	"password":         {},
 	"old_password":     {},
@@ -74,23 +74,24 @@ func OperationLog() gin.HandlerFunc {
 		status := c.Writer.Status()
 
 		entry := &model.SysOperationLog{
-			TraceID:   c.GetString("trace_id"),
-			UserID:    GetUserID(c),
-			Username:  GetUsername(c),
-			RoleCodes: strings.Join(GetRoleCodes(c), ","),
-			Module:    m.module,
-			Action:    m.action,
-			Method:    c.Request.Method,
-			Route:     c.FullPath(),
-			Path:      c.Request.URL.Path,
-			TargetID:  c.Param("id"),
-			ReqParams: reqParams,
-			Status:    status,
-			BizCode:   bizCode,
-			Success:   status == http.StatusOK && bizCode == 0,
-			ClientIP:  c.ClientIP(),
-			UserAgent: c.Request.UserAgent(),
-			LatencyMs: time.Since(start).Milliseconds(),
+			TraceID:    c.GetString("trace_id"),
+			UserID:     GetUserID(c),
+			Username:   GetUsername(c),
+			RoleCodes:  strings.Join(GetRoleCodes(c), ","),
+			Module:     m.module,
+			Action:     m.action,
+			Method:     c.Request.Method,
+			Route:      c.FullPath(),
+			Path:       c.Request.URL.Path,
+			TargetID:   c.Param("id"),
+			ReqParams:  reqParams,
+			RespParams: captureResponse(blw.body.Bytes()),
+			Status:     status,
+			BizCode:    bizCode,
+			Success:    status == http.StatusOK && bizCode == 0,
+			ClientIP:   c.ClientIP(),
+			UserAgent:  c.Request.UserAgent(),
+			LatencyMs:  time.Since(start).Milliseconds(),
 		}
 		if !entry.Success {
 			entry.ErrorMsg = bizMsg
@@ -173,6 +174,22 @@ func captureRequest(c *gin.Context) string {
 	return string(b)
 }
 
+func captureResponse(respBody []byte) string {
+	if len(respBody) == 0 {
+		return ""
+	}
+
+	out := make(map[string]string, 2)
+	if len(respBody) > maxBodyCapture {
+		out["body"] = "响应内容超过 8KB，已跳过完整记录"
+		out["truncated"] = "true"
+	} else {
+		out["body"] = redactJSON(respBody)
+	}
+	b, _ := json.Marshal(out)
+	return string(b)
+}
+
 // redactJSON masks sensitive keys in a JSON object. On parse failure it returns
 // the raw bytes as-is (already capped by the caller).
 func redactJSON(raw []byte) string {
@@ -243,6 +260,22 @@ type bodyLogWriter struct {
 }
 
 func (w *bodyLogWriter) Write(b []byte) (int, error) {
-	w.body.Write(b)
+	w.capture(b)
 	return w.ResponseWriter.Write(b)
+}
+
+func (w *bodyLogWriter) WriteString(s string) (int, error) {
+	w.capture([]byte(s))
+	return w.ResponseWriter.WriteString(s)
+}
+
+func (w *bodyLogWriter) capture(b []byte) {
+	remaining := maxBodyCapture + 1 - w.body.Len()
+	if remaining <= 0 {
+		return
+	}
+	if len(b) > remaining {
+		b = b[:remaining]
+	}
+	w.body.Write(b)
 }

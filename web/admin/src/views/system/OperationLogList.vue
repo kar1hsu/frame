@@ -119,7 +119,26 @@
         <el-descriptions-item label="User-Agent" :span="2">{{ detail.user_agent }}</el-descriptions-item>
         <el-descriptions-item v-if="!detail.success" label="错误信息" :span="2">{{ detail.error_msg }}</el-descriptions-item>
         <el-descriptions-item label="请求参数" :span="2">
-          <pre style="margin: 0; white-space: pre-wrap; word-break: break-all">{{ formatParams(detail.req_params) }}</pre>
+          <span v-if="!hasParams(detail.req_params)" class="param-empty">无</span>
+          <div v-else class="param-viewer">
+            <div class="param-summary">{{ formatParamSummary(detail.req_params) }}</div>
+            <el-collapse>
+              <el-collapse-item title="完整请求" name="request">
+                <pre class="param-pre">{{ formatParams(detail.req_params) }}</pre>
+              </el-collapse-item>
+            </el-collapse>
+          </div>
+        </el-descriptions-item>
+        <el-descriptions-item label="响应参数" :span="2">
+          <span v-if="!hasParams(detail.resp_params)" class="param-empty">无</span>
+          <div v-else class="param-viewer">
+            <div class="param-summary">{{ formatParamSummary(detail.resp_params) }}</div>
+            <el-collapse>
+              <el-collapse-item title="完整响应" name="response">
+                <pre class="param-pre">{{ formatParams(detail.resp_params) }}</pre>
+              </el-collapse-item>
+            </el-collapse>
+          </div>
         </el-descriptions-item>
       </el-descriptions>
     </el-dialog>
@@ -226,10 +245,8 @@ function formatTime(t: string) {
   return new Date(t).toLocaleString('zh-CN', { hour12: false })
 }
 
-// req_params is stored as {"query":..., "body":"<json-string>"}; unwrap the
-// nested body and pretty-print for readability.
-function formatParams(raw: string) {
-  if (!raw) return '-'
+function parseParams(raw: string) {
+  if (!raw) return null
   try {
     const obj = JSON.parse(raw)
     if (obj.body && typeof obj.body === 'string') {
@@ -239,11 +256,103 @@ function formatParams(raw: string) {
         /* keep as string */
       }
     }
-    return JSON.stringify(obj, null, 2)
+    return obj
   } catch {
     return raw
   }
 }
 
+function isEmptyValue(value: any): boolean {
+  if (value == null || value === '') return true
+  if (Array.isArray(value)) return value.length === 0
+  if (typeof value === 'object') {
+    return Object.values(value).every(isEmptyValue)
+  }
+  return false
+}
+
+function valueSize(value: any): string {
+  if (value == null || value === '') return '空'
+  if (Array.isArray(value)) return `${value.length} 项`
+  if (typeof value === 'object') {
+    const count = Object.keys(value).length
+    return `${count} 项`
+  }
+  return '1 项'
+}
+
+function hasParams(raw: string) {
+  return !isEmptyValue(parseParams(raw))
+}
+
+function formatParamSummary(raw: string) {
+  const value = parseParams(raw)
+  if (isEmptyValue(value)) return '无'
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return Object.entries(value)
+      .filter(([, v]) => !isEmptyValue(v))
+      .map(([key, v]) => `${key}: ${valueSize(v)}`)
+      .join('，')
+  }
+  return valueSize(value)
+}
+
+function formatParams(raw: string) {
+  const value = parseParams(raw)
+  if (isEmptyValue(value)) return '-'
+  if (typeof value === 'string') return value
+  return JSON.stringify(value, null, 2)
+}
+
 onMounted(fetchData)
 </script>
+
+<style scoped>
+.param-empty {
+  color: #909399;
+}
+
+.param-viewer {
+  width: 100%;
+}
+
+.param-summary {
+  color: #606266;
+  margin-bottom: 6px;
+}
+
+.param-viewer :deep(.el-collapse) {
+  border-top: 0;
+  border-bottom: 0;
+}
+
+.param-viewer :deep(.el-collapse-item__header) {
+  height: 28px;
+  line-height: 28px;
+  color: #409eff;
+  border-bottom: 0;
+}
+
+.param-viewer :deep(.el-collapse-item__wrap) {
+  border-bottom: 0;
+}
+
+.param-viewer :deep(.el-collapse-item__content) {
+  padding-bottom: 0;
+}
+
+.param-pre {
+  max-height: 260px;
+  overflow: auto;
+  margin: 0;
+  padding: 10px 12px;
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  color: #303133;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+</style>
