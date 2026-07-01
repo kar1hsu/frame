@@ -5,7 +5,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center">
           <span>操作日志</span>
           <el-button
-            v-if="userStore.hasPermission('monitor:operlog:clear')"
+            v-if="userStore.hasPermission('system:operlog:clear')"
             type="danger"
             plain
             @click="handleClear"
@@ -74,7 +74,7 @@
           <template #default="{ row }">
             <el-button link type="primary" @click="openDetail(row)">详情</el-button>
             <el-popconfirm
-              v-if="userStore.hasPermission('monitor:operlog:delete')"
+              v-if="userStore.hasPermission('system:operlog:delete')"
               title="确认删除该条日志？"
               @confirm="handleDelete(row.id)"
             >

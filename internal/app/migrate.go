@@ -117,18 +117,18 @@ func defaultAPIs() []model.SysAPI {
 		{ID: 17, Path: "/admin/apis", Method: "POST", Group: "API管理", Description: "创建API"},
 		{ID: 18, Path: "/admin/apis/:id", Method: "PUT", Group: "API管理", Description: "更新API"},
 		{ID: 19, Path: "/admin/apis/:id", Method: "DELETE", Group: "API管理", Description: "删除API"},
-		// 操作日志 (20-23)
-		{ID: 20, Path: "/admin/operation-logs", Method: "GET", Group: "操作日志", Description: "日志列表"},
-		{ID: 21, Path: "/admin/operation-logs/:id", Method: "GET", Group: "操作日志", Description: "日志详情"},
-		{ID: 22, Path: "/admin/operation-logs/:id", Method: "DELETE", Group: "操作日志", Description: "删除日志"},
-		{ID: 23, Path: "/admin/operation-logs", Method: "DELETE", Group: "操作日志", Description: "清空日志"},
-		// 系统配置 (24-28)
-		{ID: 24, Path: "/admin/configs", Method: "GET", Group: "系统配置", Description: "配置列表"},
-		{ID: 25, Path: "/admin/configs", Method: "POST", Group: "系统配置", Description: "新增配置"},
-		{ID: 26, Path: "/admin/configs", Method: "PUT", Group: "系统配置", Description: "保存配置"},
-		{ID: 27, Path: "/admin/configs/:id", Method: "DELETE", Group: "系统配置", Description: "删除配置"},
-		{ID: 28, Path: "/admin/configs/refresh", Method: "POST", Group: "系统配置", Description: "刷新配置缓存"},
-		{ID: 29, Path: "/admin/configs/:id", Method: "PUT", Group: "系统配置", Description: "编辑配置"},
+		// 系统配置 (20-25)
+		{ID: 20, Path: "/admin/configs", Method: "GET", Group: "系统配置", Description: "配置列表"},
+		{ID: 21, Path: "/admin/configs", Method: "POST", Group: "系统配置", Description: "新增配置"},
+		{ID: 22, Path: "/admin/configs", Method: "PUT", Group: "系统配置", Description: "保存配置"},
+		{ID: 23, Path: "/admin/configs/:id", Method: "DELETE", Group: "系统配置", Description: "删除配置"},
+		{ID: 24, Path: "/admin/configs/refresh", Method: "POST", Group: "系统配置", Description: "刷新配置缓存"},
+		{ID: 25, Path: "/admin/configs/:id", Method: "PUT", Group: "系统配置", Description: "编辑配置"},
+		// 操作日志 (26-29)
+		{ID: 26, Path: "/admin/operation-logs", Method: "GET", Group: "操作日志", Description: "日志列表"},
+		{ID: 27, Path: "/admin/operation-logs/:id", Method: "GET", Group: "操作日志", Description: "日志详情"},
+		{ID: 28, Path: "/admin/operation-logs/:id", Method: "DELETE", Group: "操作日志", Description: "删除日志"},
+		{ID: 29, Path: "/admin/operation-logs", Method: "DELETE", Group: "操作日志", Description: "清空日志"},
 	}
 }
 
@@ -175,25 +175,22 @@ func defaultMenus(a []model.SysAPI) []model.SysMenu {
 		{ID: 43, ParentID: 4, Name: "删除菜单", Sort: 4, Type: 2, Permission: "system:menu:delete", Visible: 1, Status: 1,
 			APIs: []model.SysAPI{a[14]}},
 
-		// ── 系统配置（系统管理下）──
-		{ID: 7, ParentID: 1, Name: "系统配置", Path: "/system/config", Component: "system/config/index", Icon: "Tools", Sort: 9, Type: 1, Permission: "system:config:list", Visible: 1, Status: 1,
-			APIs: []model.SysAPI{a[23]}},
-		{ID: 70, ParentID: 7, Name: "保存配置", Sort: 1, Type: 2, Permission: "system:config:edit", Visible: 1, Status: 1,
-			APIs: []model.SysAPI{a[25], a[27], a[28]}},
-		{ID: 71, ParentID: 7, Name: "新增配置", Sort: 2, Type: 2, Permission: "system:config:add", Visible: 1, Status: 1,
-			APIs: []model.SysAPI{a[24]}},
-		{ID: 72, ParentID: 7, Name: "删除配置", Sort: 3, Type: 2, Permission: "system:config:delete", Visible: 1, Status: 1,
-			APIs: []model.SysAPI{a[26]}},
-
-		// ── 系统监控（目录）──
-		{ID: 5, ParentID: 0, Name: "系统监控", Path: "/monitor", Icon: "Monitor", Sort: 2, Type: 0, Visible: 1, Status: 1},
+		// ── 系统配置 ──
+		{ID: 5, ParentID: 1, Name: "系统配置", Path: "/system/config", Component: "system/config/index", Icon: "Tools", Sort: 4, Type: 1, Permission: "system:config:list", Visible: 1, Status: 1,
+			APIs: []model.SysAPI{a[19]}},
+		{ID: 50, ParentID: 5, Name: "保存配置", Sort: 1, Type: 2, Permission: "system:config:edit", Visible: 1, Status: 1,
+			APIs: []model.SysAPI{a[21], a[23], a[24]}},
+		{ID: 51, ParentID: 5, Name: "新增配置", Sort: 2, Type: 2, Permission: "system:config:add", Visible: 1, Status: 1,
+			APIs: []model.SysAPI{a[20]}},
+		{ID: 52, ParentID: 5, Name: "删除配置", Sort: 3, Type: 2, Permission: "system:config:delete", Visible: 1, Status: 1,
+			APIs: []model.SysAPI{a[22]}},
 
 		// ── 操作日志 ──
-		{ID: 6, ParentID: 5, Name: "操作日志", Path: "/monitor/operlog", Component: "monitor/operlog/index", Icon: "Document", Sort: 1, Type: 1, Permission: "monitor:operlog:list", Visible: 1, Status: 1,
-			APIs: []model.SysAPI{a[19], a[20]}},
-		{ID: 60, ParentID: 6, Name: "删除日志", Sort: 1, Type: 2, Permission: "monitor:operlog:delete", Visible: 1, Status: 1,
-			APIs: []model.SysAPI{a[21]}},
-		{ID: 61, ParentID: 6, Name: "清空日志", Sort: 2, Type: 2, Permission: "monitor:operlog:clear", Visible: 1, Status: 1,
-			APIs: []model.SysAPI{a[22]}},
+		{ID: 6, ParentID: 1, Name: "操作日志", Path: "/system/operlog", Component: "system/operlog/index", Icon: "Document", Sort: 5, Type: 1, Permission: "system:operlog:list", Visible: 1, Status: 1,
+			APIs: []model.SysAPI{a[25], a[26]}},
+		{ID: 60, ParentID: 6, Name: "删除日志", Sort: 1, Type: 2, Permission: "system:operlog:delete", Visible: 1, Status: 1,
+			APIs: []model.SysAPI{a[27]}},
+		{ID: 61, ParentID: 6, Name: "清空日志", Sort: 2, Type: 2, Permission: "system:operlog:clear", Visible: 1, Status: 1,
+			APIs: []model.SysAPI{a[28]}},
 	}
 }

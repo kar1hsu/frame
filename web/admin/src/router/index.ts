@@ -38,16 +38,16 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '菜单管理' },
       },
       {
-        path: 'monitor/operlog',
-        name: 'MonitorOperLog',
-        component: () => import('@/views/monitor/OperationLogList.vue'),
-        meta: { title: '操作日志' },
-      },
-      {
         path: 'system/config',
         name: 'SystemConfig',
         component: () => import('@/views/system/ConfigList.vue'),
         meta: { title: '系统配置' },
+      },
+      {
+        path: 'system/operlog',
+        name: 'SystemOperLog',
+        component: () => import('@/views/system/OperationLogList.vue'),
+        meta: { title: '操作日志' },
       },
     ],
   },
